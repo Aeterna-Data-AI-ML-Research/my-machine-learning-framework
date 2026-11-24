@@ -157,6 +157,7 @@ class FeatureFlags(ApiModel):
     kaggle_sync: bool = False
     git_sync: bool = False
     mcp_oauth: bool = False
+    contest_enforcer: bool = True
 
 
 class OrgFeatureFlagsUpdate(ApiModel):
@@ -167,6 +168,7 @@ class OrgFeatureFlagsUpdate(ApiModel):
     kaggle_sync: bool | None = None
     git_sync: bool | None = None
     mcp_oauth: bool | None = None
+    contest_enforcer: bool | None = None
 
 
 class OrgResponse(ApiModel):

@@ -123,8 +123,12 @@ Canonical human lock: [`saas-api.md`](saas-api.md). Source of features: Campaign
 | --- | --- | --- | --- | --- |
 | `get_next_mission` / `complete_mission` / lease fencing | MCP B2 | MCP tools | status via dashboard missions | mcp |
 | `report_mission_progress` | MCP | MCP | — | mcp |
-| `propose_lever_execution` + lever_verifier | MCP E2 | MCP | — | mcp |
+| `propose_lever_execution` + lever_verifier (+ brain dead-end refuse) | MCP E2 | MCP | — | mcp |
 | `query_project_brain` | MCP + HTTP | MCP + `POST …/brain/query` | — | mcp |
+| `ingest_vault_brain` / `record_dead_end` / `append_vault_law` | CASMI brain | MCP | — | mcp |
+| `dual_canary` / `diff_ranked_submissions` / `public_code_badge` | CASMI ranked | MCP (+ CLI `canary`) | — | mcp |
+| `kaggle_refresh` / `kaggle_submit_lifecycle` | Kaggle ops | MCP (+ HTTP `…/kaggle/refresh`) | Overview sync | mcp |
+| `ntl_status` | Contest-enforcer | MCP | — | mcp |
 | `register_external_asset` / license verify | Provenance | MCP (+ credits HTTP) | TRUST credits | mcp |
 
 ## Durability

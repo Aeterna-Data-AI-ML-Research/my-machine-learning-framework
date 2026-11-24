@@ -2,6 +2,8 @@
 
 How-to. Fit blend weights on out-of-fold predictions, then refuse a submission that fails the ledger, the hash, or the kernel rules.
 
+For Exact PNG / multi-task OCF contests, prefer [SiClink image / recon](siclink-image-recon.md). For ranked MRR@25 dual-canary, prefer [CASMI ranked canary](casmi-ranked-canary.md). Scorer table: [Metrics and scorers](../reference/metrics-scorers.md).
+
 ## Align and weight
 
 Each branch is a `.npz` prediction bundle. Branches must share ids. Class order mismatches raise `CLASS_ORDER_MISMATCH`. The suggested fix is `blend reorder-classes`.
@@ -15,7 +17,7 @@ python -m mymlfw blend optimize \
   --metric log_loss
 ```
 
-`--metric` is `log_loss`, `accuracy`, or `balanced_accuracy`. Add `--l2` to change the default `0.05`.
+`--metric` / `--scorer` may be a built-in (`log_loss`, `accuracy`, `balanced_accuracy`, `png_parity`, `ocf_equal_mean`) or `module.path:callable`. Add `--l2` to change the default `0.05`.
 
 Check redundancy before you keep a branch:
 
@@ -71,7 +73,20 @@ Check the submission shape:
 python -m mymlfw submit check --kind id_label --file submission.csv --classes a,b
 ```
 
-`--kind ranked` checks a candidate list. The default cap is 25.
+| `--kind` | Checks |
+| --- | --- |
+| `id_label` | Id + label columns / class set. |
+| `ranked` | Candidate lists; default `--max-k 25`. |
+| `kaggle_png_csv_zip` | Base64 PNG rows (mode L, 64×64, ink, AppleDouble, `--n-ids`). |
+
+`probe sha` prefers the inner CSV SHA when the artifact is a single-CSV zip (Kaggle auto-extract).
+
+Debiased NTL promote and cloud anti-waste:
+
+```bash
+python -m mymlfw gate debiased --full full.npz --imb imb.npz --baseline-full 0.5 --baseline-imb 0.5
+python -m mymlfw gate cloud-local --record artifacts/local_mps_fold0.json
+```
 
 ## Kernel payload
 

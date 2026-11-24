@@ -30,6 +30,10 @@ _CLOUD_FIXES: dict[str, str] = {
     "cloud_budget_exceeded": "Raise max_cloud_micros_day entitlement",
     "invalid_api_key": "Pass a non-empty RunPod api_key",
     "invalid_role_arn": "Pass arn:aws:iam::… role_arn",
+    "CLOUD_BLOCKED": (
+        "Write local MPS Fold-0 champion JSON and set MYMLFW_LOCAL_PROBE_RECORD "
+        "(or MYMLFW_ENFORCE_CLOUD_GATE=1 with a passing record)"
+    ),
 }
 
 
@@ -103,6 +107,36 @@ async def tool_list_projects(
         return auth
     listing = await missions.list_projects(auth.principal.workspace_id)
     return listing.model_dump(mode="json")
+
+
+async def tool_ntl_status(
+    *,
+    pats: PatStore,
+    headers: dict[str, str] | None = None,
+    pat: str | None = None,
+    project_id: str | None = None,
+    contest_dir: str | None = None,
+    fire_state_path: str | None = None,
+    gate_json_path: str | None = None,
+    pin_id: str | None = None,
+) -> dict[str, Any]:
+    """Contest-enforcer snapshot: pin, N_rem, held cands, last gate, fire plan."""
+    auth = await _auth(pats=pats, headers=headers, pat=pat, scopes=("mcp:worker",))
+    if isinstance(auth, dict):
+        return auth
+    if project_id:
+        try:
+            _require_project(auth, project_id)
+        except PermissionError as exc:
+            return auth_error_payload(exc) or _err("permission_denied", str(exc))
+    from mymlfw.saas.ntl_status import read_ntl_status
+
+    return read_ntl_status(
+        contest_dir=contest_dir,
+        fire_state_path=fire_state_path,
+        gate_json_path=gate_json_path,
+        pin_id=pin_id,
+    )
 
 
 async def tool_get_project_dashboard(

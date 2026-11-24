@@ -10,13 +10,19 @@ A probe changes one variable. `change_count` is `1`. The identity is the variabl
 
 Call `mymlfw.cv.run_oof` for grouped folds. Fit unsupervised steps on the training side of the fold. Fit temperature on a fold that is not the one being scored. Convert logits with `log_softmax` before a probability pool. `align` raises on an id mismatch unless the caller passes `on_mismatch="drop_and_warn"`.
 
+Exact PNG / OCF contests use `png_parity` (or a plugin), not soft class-prob proxies (`SOFT_PROXY` / `soft_proxy_vs_exact_metric`). Multi-task promotion uses equal-mean S=(S₁+…+Sₖ)/k with full-fold `n` — never N-weighted Task3 bias or `n≤400` proxies (`fold_subsample_invalid`).
+
+## Ranked dual-canary
+
+CASMI-shaped ship requires `canary dual` SHIP: both Panel and HUBS ΔMRR ≥ 0 and R1 losses = 0. Night-Shift score-only digests never call Kaggle submit.
+
 ## Engines and the kernel
 
-An engine does not import `mymlfw.train.lora`. Notebook metadata sets `enable_internet` to false, and preflight rejects anything else (`INTERNET_ENABLED`). A payload named like a weight file, or a `.npz` payload, raises `PAYLOAD_KIND`. The unpacked zip has a size cap (`ZIP_TOO_LARGE`).
+An engine does not import `mymlfw.train.lora`. Notebook metadata sets `enable_internet` to false, and preflight rejects anything else (`INTERNET_ENABLED`). A payload named like a weight file, or a `.npz` payload, raises `PAYLOAD_KIND`. The unpacked zip has a size cap (`ZIP_TOO_LARGE`). Preflight refuses starter-baseline zip hashes and empty Output / competition fields when those keys are present. GPU kernel submit must clear `IS_RERUN` / `FAST_COMMIT` / `enable_gpu=False` dummies.
 
 ## Cloud and wheels
 
-`cloud launch` renders a shell script after `CLOUD_APPROVAL` is set. The rendered command is one line. `pack-deps` without `--dry-run` raises `PACK_DEPS_LIVE`.
+`cloud launch` renders a shell script after `CLOUD_APPROVAL` is set. The rendered command is one line. `pack-deps` without `--dry-run` raises `PACK_DEPS_LIVE`. SaaS / MCP cloud runners stay blocked until `gate cloud-local` (MPS Fold-0 champion JSON) passes unless explicitly skipped.
 
 ## Memory
 

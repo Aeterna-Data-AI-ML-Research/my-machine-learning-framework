@@ -1,6 +1,6 @@
 # mymlfw
 
-Local toolkit for ML and Kaggle contests. Version **0.3.0**. It keeps one experiment ledger, checks blends and submissions, and gives a coding agent a memory of what already failed. The same repo also ships a **Campaign SaaS** control plane (API, Studio web, MCP, worker) plus a shared **DS playbook** (`mymlfw playbook` / Studio New project wizard) for modality strategies and paradigm shifts.
+Local toolkit for ML and Kaggle contests. Version **0.4.0**. It keeps one experiment ledger, checks blends and submissions, and gives a coding agent a memory of what already failed. The same repo also ships a **Campaign SaaS** control plane (API, Studio web, MCP, worker) plus a shared **DS playbook** (`mymlfw playbook` / Studio New project wizard) for modality strategies and paradigm shifts.
 
 This repository is the documentation and the package. Human reading starts at [docs/index.md](docs/index.md). Coding agents read [llms.txt](llms.txt), then [AGENTS.md](AGENTS.md).
 
@@ -93,6 +93,8 @@ Compose mounts `~/.kaggle` read-only into the API container (`make up` creates t
 
 - [Run the Campaign SaaS stack](docs/how-to/run-campaign-saas.md) — ports, feature flags, advise curls
 - [Connect cloud runners](docs/how-to/connect-cloud-runners.md) — RunPod / AWS after sealing keys
+- [SiClink image / recon](docs/how-to/siclink-image-recon.md) — `png_parity`, equal-mean multitask, PNG-zip submit
+- [CASMI ranked canary](docs/how-to/casmi-ranked-canary.md) — dual-canary SHIP/FAIL, vault→brain, MCP
 - [SaaS environment reference](docs/reference/saas-env.md)
 - Compose file: [`deploy/docker-compose.yml`](deploy/docker-compose.yml)
 
@@ -118,7 +120,7 @@ Phase modules run from `tests/test_phase1_package.py` through `tests/test_phase1
 
 ## Marketing site (GitHub Pages)
 
-Static marketing site lives in [`site/`](site/). Deployed by [`.github/workflows/pages.yml`](.github/workflows/pages.yml) from `site/` on pushes to `main`.
+Static marketing site lives in [`site/index.html`](site/index.html). Deployed by [`.github/workflows/pages.yml`](.github/workflows/pages.yml) from `site/` on pushes to `main`.
 
 `https://aeterna-data-ai-ml-research.github.io/my-machine-learning-framework/`
 
@@ -129,4 +131,4 @@ make cli CMD='version'
 # or on host: .venv/bin/python -m mymlfw version
 ```
 
-The contest walkthrough is [docs/tutorials/first-contest.md](docs/tutorials/first-contest.md).
+The contest walkthrough is [docs/tutorials/first-contest.md](docs/tutorials/first-contest.md). Full map: [docs/index.md](docs/index.md).

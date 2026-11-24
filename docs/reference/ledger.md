@@ -16,9 +16,10 @@ Reference for `ledger/experiments.csv`. Columns, in order:
 | `expected_band_high` | `probe register`. |
 | `public_score` | `probe score`. |
 | `cv_lb_gap` | Absolute gap between `cv_mean` and `public_score` when both exist. |
-| `artifact_sha256` | `probe sha`, and preflight when the cell is still empty. |
+| `artifact_sha256` | `probe sha` (prefers inner CSV SHA for single-CSV zips), and preflight when the cell is still empty. |
+| `code_sha256` | `probe sha --code`; duplicate code → `DUPLICATE_CODE`. |
 | `verdict` | `pending` at registration. See below. |
-| `note` | `--note` on register or verdict. |
+| `note` | `--note` on register or verdict. Put typed kill tags here for advise retrieval. |
 
 ## Verdicts
 
@@ -28,12 +29,38 @@ Reference for `ledger/experiments.csv`. Columns, in order:
 | `promote-candidate` | Kept. Archive lists it under proven wins when `cv_delta` is set. |
 | `kill` | Do not repeat. Preflight returns `PROBE_CLOSED`. |
 | `confirmed-large-gap` | Public score was outside the registered band. Preflight returns `PROBE_CLOSED`. |
+| `noise` | Public Δ inside `--noise-band` (optional on `probe score`). |
+| `DUPLICATE_CODE` | Same `code_sha256` as an earlier row. |
 
-`probe score` sets `confirmed-large-gap` by itself when the public score is outside the band. Other verdicts are set with `probe verdict`. `BAD_VERDICT` names anything outside the four values.
+`probe score` sets `confirmed-large-gap` by itself when the public score is outside the band (or `noise` when inside the noise band). Other verdicts are set with `probe verdict`.
 
 A probe is identified by the variable string plus the two band edges. Registering that identity again raises `DUPLICATE_PROBE`, including while the first row is still `pending`. The same `experiment_id` and the same identity returns the existing pending row.
 
 Pending rows are not retrieval chunks. A non-pending `kill` or `confirmed-large-gap` is a trap. `promote-candidate` is a win.
+
+## Typed kill tags
+
+Put these strings in `note` (or as the verdict when closing) so `advise` and `lever-registry sync-kills` surface them before Sinkhorn/fuse-style levers:
+
+| Tag | Typical meaning |
+| --- | --- |
+| `td_uniqueness_trap` | Uniqueness / collision dead end. |
+| `soft_proxy_vs_exact_metric` | Soft IoU / class-prob proxy instead of Exact PNG / Exact-ID. |
+| `fold_subsample_invalid` | `n` below full fold (multitask / cloud gates also use this code). |
+| `sibling_odds_rebrand` | Rebranded sibling odds. |
+| `typo_micro_variant` | Typo / micro fork. |
+| `duplicate_code_sha` | Same code SHA as a prior fire. |
+| `noise_band` | Δ inside noise band. |
+
+Sync into a local lever registry:
+
+```bash
+python -m mymlfw lever-registry sync-kills --registry levers.json --ledger ledger/experiments.csv
+```
+
+## Multitask sidecar
+
+Equal-mean task scores live in a separate JSON file (not a new CSV column). See [SiClink image / recon](../how-to/siclink-image-recon.md) and `multitask` in [CLI](cli.md).
 
 ## Archive order
 

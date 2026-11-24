@@ -333,6 +333,15 @@ def test_build_mcp_server_registers_b2_and_cloud_tools():
         "quote_cloud_launch",
         "launch_cloud_runner",
         "stop_cloud_runner",
+        "ntl_status",
+        "dual_canary",
+        "kaggle_refresh",
+        "kaggle_submit_lifecycle",
+        "record_dead_end",
+        "append_vault_law",
+        "diff_ranked_submissions",
+        "ingest_vault_brain",
+        "public_code_badge",
     ):
         assert required in tool_names, required
 

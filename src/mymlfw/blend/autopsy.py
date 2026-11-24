@@ -59,9 +59,33 @@ def diagnose_oof(oof_path, train, out_path, label_col: str = "label", text_col: 
     worst = losses[:20]
     pair_text = "\n".join(f"{gold}->{guess} {count}" for (gold, guess), count in top_pairs) or "none"
     worst_text = "\n".join(f"{row_id} loss={loss:.4g} gold={gold} pred={guess}" for loss, row_id, gold, guess in worst) or "none"
+    # Family / contested-only view: treat label prefix before '/' or '_' as family
+    family_pairs: Counter = Counter()
+    for gold, guess in zip(truth, pred):
+        if gold == guess:
+            continue
+        fg = str(gold).split("/")[0].split("_")[0]
+        fp = str(guess).split("/")[0].split("_")[0]
+        family_pairs[(fg, fp)] += 1
+    family_text = (
+        "\n".join(f"{a}->{b} {c}" for (a, b), c in family_pairs.most_common(15)) or "none"
+    )
+    n_err = int(sum(1 for g, p in zip(truth, pred) if g != p))
+    n = max(1, len(truth))
+    # Oracle ceilings: perfect specialist on top confused families
+    recoverable = []
+    for (fg, fp), count in family_pairs.most_common(5):
+        bp = 10_000.0 * count / n
+        recoverable.append(f"{fg}->{fp} count={count} recoverable_bp≈{bp:.1f}")
+    oracle_text = "\n".join(recoverable) or "none"
     text = (
         "# ERROR_AUTOPSY\n\n"
         f"## confusion\n{pair_text}\n\n"
+        f"## family_confusion\n{family_text}\n\n"
+        f"## oracle_ceilings\n"
+        f"errors={n_err}/{n}\n"
+        f"gemini_twin_hint=pair top family confusion; glm_pair=second family\n"
+        f"{oracle_text}\n\n"
         f"## length_quartile\n" + "\n".join(length_lines) + "\n\n"
         f"## group_size\n" + ("\n".join(group_lines) or "none") + "\n\n"
         f"## highest_loss\n{worst_text}\n"

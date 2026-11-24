@@ -1,6 +1,6 @@
 # mymlfw documentation
 
-Version 0.3.0. These pages follow the [Diátaxis](https://diataxis.fr/) split: a tutorial to learn the loop, how-to guides for one task, reference for lookup, and explanation for why the pieces are separated.
+Version 0.4.0. These pages follow the [Diátaxis](https://diataxis.fr/) split: a tutorial to learn the loop, how-to guides for one task, reference for lookup, and explanation for why the pieces are separated.
 
 | If you are | Start here |
 | --- | --- |
@@ -28,6 +28,8 @@ Task-oriented. Each page assumes the tutorial is done.
 - [Record a probe](how-to/record-a-probe.md)
 - [Advise a contest](how-to/advise-a-contest.md)
 - [Blend and gate a submission](how-to/blend-and-gate.md)
+- [Run a SiClink-style image / recon contest](how-to/siclink-image-recon.md) — `png_parity`, equal-mean multitask, PNG-zip submit
+- [Run a CASMI-style ranked dual-canary contest](how-to/casmi-ranked-canary.md) — SHIP/FAIL, vault→brain, MCP
 - [Remember, ingest, and search](how-to/use-memory.md)
 - [Run the Campaign SaaS stack](how-to/run-campaign-saas.md)
 - [Start a Studio project with the DS playbook wizard](how-to/studio-new-project-wizard.md) — also `python -m mymlfw playbook …`
@@ -40,6 +42,7 @@ Task-oriented. Each page assumes the tutorial is done.
 Information-oriented. Tables, not a narrative.
 
 - [CLI](reference/cli.md)
+- [Metrics and scorers](reference/metrics-scorers.md)
 - [Contest layout](reference/contest-layout.md)
 - [Ledger](reference/ledger.md)
 - [SaaS environment and flags](reference/saas-env.md)

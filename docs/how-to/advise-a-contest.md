@@ -33,6 +33,8 @@ On success, stdout JSON includes:
 
 The brief is `docs/MYMLFW_ADVICE.md` in the worktree. Its headings are fixed: traps, playbook, learned patterns, then candidate files. `# NEXT STEPS` is inserted above the `episode add` command.
 
+When `ledger/experiments.csv` (or `experiments.csv`) exists, typed kill tags in verdict/`note` (`soft_proxy_vs_exact_metric`, `fold_subsample_invalid`, `td_uniqueness_trap`, …) are injected into retrieval so Sinkhorn/fuse-style next steps are deferred. Tag kills when you close a probe — see [Ledger](../reference/ledger.md).
+
 ## What the worktree contains
 
 - `engine_mymlfw.py`, a subclass of the matched engine. It does not import training code.

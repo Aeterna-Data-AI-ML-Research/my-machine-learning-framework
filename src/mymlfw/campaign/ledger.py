@@ -24,11 +24,29 @@ COLUMNS = [
     "public_score",
     "cv_lb_gap",
     "artifact_sha256",
+    "code_sha256",
     "verdict",
     "note",
 ]
 
-COMPLETED = {"kill", "promote-candidate", "confirmed-large-gap"}
+COMPLETED = {
+    "kill",
+    "promote-candidate",
+    "confirmed-large-gap",
+    "noise",
+    "DUPLICATE_CODE",
+}
+TYPED_KILL_TAGS = {
+    "td_uniqueness_trap",
+    "soft_proxy_vs_exact_metric",
+    "fold_subsample_invalid",
+    "sibling_odds_rebrand",
+    "typo_micro_variant",
+    "o3_o4_mps_fail",
+    "areeb_mix3",
+    "duplicate_code_sha",
+    "noise_band",
+}
 
 
 def _fmt(value) -> str:
@@ -192,7 +210,7 @@ def update_cv(path, experiment_id: str, cv_mean: float, cv_std: float | None = N
     return row
 
 
-def suggest_verdict(row: dict) -> str:
+def suggest_verdict(row: dict, *, noise_band: float | None = None) -> str:
     public = _num(row.get("public_score", ""))
     low = _num(row.get("expected_band_low", ""))
     high = _num(row.get("expected_band_high", ""))
@@ -200,10 +218,21 @@ def suggest_verdict(row: dict) -> str:
         return row.get("verdict") or "pending"
     if public < low or public > high:
         return "confirmed-large-gap"
+    cv_mean = _num(row.get("cv_mean", ""))
+    if noise_band is not None and cv_mean is not None:
+        if abs(float(public) - float(cv_mean)) < float(noise_band):
+            return "noise"
     return row.get("verdict") or "pending"
 
 
-def record_public_score(path, experiment_id: str, public_score: float) -> dict:
+def record_public_score(
+    path,
+    experiment_id: str,
+    public_score: float,
+    *,
+    noise_band: float | None = None,
+    debiased_promote_ok: bool | None = None,
+) -> dict:
     path = Path(path)
     rows = load_ledger(path)
     row = _require(rows, experiment_id)
@@ -211,19 +240,51 @@ def record_public_score(path, experiment_id: str, public_score: float) -> dict:
     cv_mean = _num(row["cv_mean"])
     if cv_mean is not None:
         row["cv_lb_gap"] = _fmt(abs(cv_mean - float(public_score)))
-    suggestion = suggest_verdict(row)
-    if suggestion == "confirmed-large-gap":
+    suggestion = suggest_verdict(row, noise_band=noise_band)
+    # Noise-band kill unless Δ clears band AND debiased gate passes
+    if suggestion == "noise":
+        if debiased_promote_ok and cv_mean is not None:
+            if abs(float(public_score) - float(cv_mean)) >= float(noise_band or 0.0):
+                suggestion = row.get("verdict") or "pending"
+            else:
+                row["verdict"] = "noise"
+        else:
+            row["verdict"] = "noise"
+    elif suggestion == "confirmed-large-gap":
         row["verdict"] = suggestion
     save_ledger(path, rows)
     row["suggested_verdict"] = suggestion
     return row
 
 
+def mark_duplicate_code(path, experiment_id: str, *, note: str = "DUPLICATE_CODE") -> dict:
+    return set_verdict(path, experiment_id, "DUPLICATE_CODE", note=note)
+
+
+def set_code_sha(path, experiment_id: str, digest: str) -> dict:
+    path = Path(path)
+    rows = load_ledger(path)
+    row = _require(rows, experiment_id)
+    row["code_sha256"] = digest
+    for other in rows:
+        if other["experiment_id"] == experiment_id:
+            continue
+        if other.get("code_sha256") and other["code_sha256"] == digest:
+            row["verdict"] = "DUPLICATE_CODE"
+            if not row.get("note"):
+                row["note"] = f"same code_sha as {other['experiment_id']}"
+            break
+    save_ledger(path, rows)
+    return row
+
+
 def set_verdict(path, experiment_id: str, verdict: str, note: str | None = None) -> dict:
-    if verdict not in COMPLETED | {"pending"}:
+    allowed = COMPLETED | {"pending"} | TYPED_KILL_TAGS
+    if verdict not in allowed:
         raise MymlfwError(
             "BAD_VERDICT",
-            "Use pending, kill, promote-candidate, or confirmed-large-gap.",
+            "Use pending, kill, promote-candidate, confirmed-large-gap, noise, "
+            "DUPLICATE_CODE, or a typed trap tag.",
             verdict=verdict,
         )
     path = Path(path)

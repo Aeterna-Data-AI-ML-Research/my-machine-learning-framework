@@ -12,7 +12,7 @@ make cli-build
 make cli CMD='version'
 ```
 
-The version line is `0.3.0`.
+The version line is `0.4.0`.
 
 Optional host install: `pip install -e .` then `python -m mymlfw version`.
 

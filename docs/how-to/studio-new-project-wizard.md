@@ -1,6 +1,6 @@
 # Start a Studio project with the DS playbook wizard
 
-How-to (mymlfw 0.3.0). Create a Campaign SaaS project so the first roadmap is EDA → validation → dumb baseline → features — never “pick GPT first.” The strategy ladder and paradigm-shift lists are shared with `python -m mymlfw playbook`.
+How-to (mymlfw 0.4.0). Create a Campaign SaaS project so the first roadmap is EDA → validation → dumb baseline → features — never “pick GPT first.” The strategy ladder and paradigm-shift lists are shared with `python -m mymlfw playbook`.
 
 ## When to use this
 

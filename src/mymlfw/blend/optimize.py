@@ -11,7 +11,11 @@ from mymlfw.errors import MymlfwError
 
 
 def score_bundle(y_true, bundle, metric: str = "log_loss") -> float:
-    """Higher is better. ``log_loss`` returns the mean log probability of the label."""
+    """Higher is better. ``log_loss`` returns the mean log probability of the label.
+
+    ``metric`` may be a built-in name or a registered / ``path:callable`` scorer
+    that accepts ``(y_true, bundle)`` (see ``mymlfw.metrics.registry``).
+    """
     y_true = np.asarray(y_true)
     if len(y_true) != len(bundle.ids):
         raise MymlfwError(
@@ -20,8 +24,12 @@ def score_bundle(y_true, bundle, metric: str = "log_loss") -> float:
             rows=int(len(bundle.ids)),
             labels=int(len(y_true)),
         )
-    if metric not in {"log_loss", "accuracy", "balanced_accuracy"}:
-        raise MymlfwError("BAD_METRIC", "Use log_loss, accuracy, or balanced_accuracy.", metric=metric)
+    builtins = {"log_loss", "accuracy", "balanced_accuracy"}
+    if metric not in builtins:
+        from mymlfw.metrics.registry import resolve_scorer, safe_score
+
+        return safe_score(resolve_scorer(metric), y_true, bundle)
+
     logp = as_log_probs(bundle)
     classes = [str(label) for label in bundle.classes.tolist()]
     index = {label: i for i, label in enumerate(classes)}

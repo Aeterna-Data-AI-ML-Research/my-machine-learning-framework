@@ -1,13 +1,14 @@
 # AGENTS.md
 
-mymlfw 0.3.0. Read `llms.txt` before editing a contest. Human documentation is [docs/index.md](docs/index.md).
+mymlfw 0.4.0. Read `llms.txt` before editing a contest. Human documentation is [docs/index.md](docs/index.md).
 
 Campaign SaaS work: also read partitioned AGENTS under `src/mymlfw/saas/`, `src/mymlfw/saas/db/`, `src/mymlfw/saas/rag/`, `src/mymlfw/mcp/`, and `web/`. Web UI stack: see `web/AGENTS.md` (Tailwind CSS + Charts.css; not ascii.rest).
 
 ## Commands
 
 - Tests: `python -m pytest -q` from this checkout. Use the project virtualenv when it exists: `.venv/bin/python -m pytest -q`.
-- CLI (Docker-first): `make cli-build` once after `Dockerfile.cli` changes, then `make cli CMD='version'` (Compose profile `cli`; `./deploy/run-cli.sh` also works). Host: `python -m mymlfw`. Failures are one JSON object on stderr with `error_code` and `suggested_fix`.
+- CLI (Docker-first): `make cli-build` once after `Dockerfile.cli` changes, then `make cli CMD='version'` (Compose profile `cli`; `./deploy/run-cli.sh` also works). Host: `python -m mymlfw`. Contest-enforcer: `gate debiased|pin-check|cloud-local`, `fire status|assert`, `kaggle verify-notebook`, `canary dual`, `multitask`, `submit check --kind kaggle_png_csv_zip`. Failures are one JSON object on stderr with `error_code` and `suggested_fix`.
+- Contest how-tos: [SiClink image / recon](docs/how-to/siclink-image-recon.md), [CASMI ranked canary](docs/how-to/casmi-ranked-canary.md), [Metrics scorers](docs/reference/metrics-scorers.md), [Agent MCP sync](docs/how-to/agent-mcp-campaign-sync.md).
 - Refresh the recipe block inside `llms.txt`: `python -m mymlfw sync-docs`. Keep the file at or under 1500 whitespace tokens. The checkout copy and `src/mymlfw/resources/llms.txt` stay identical.
 - SaaS local stack: `make up` / `make dev` from checkout — Compose binds mongo/redis/minio to `127.0.0.1` only. `make logs` / `make ps` / `make down`. Operator docs: [docs/how-to/run-campaign-saas.md](docs/how-to/run-campaign-saas.md), [docs/how-to/connect-cloud-runners.md](docs/how-to/connect-cloud-runners.md), [docs/reference/saas-env.md](docs/reference/saas-env.md).
 
@@ -85,14 +86,17 @@ Binding for SaaS/api/mcp/web work. History and shortcut fixes never weaken these
 | Change | Look at |
 | --- | --- |
 | Ledger and probe guard | `src/mymlfw/campaign/ledger.py` |
+| Multitask equal-mean | `src/mymlfw/campaign/multitask.py` |
+| Dual-canary / PNG submit | `src/mymlfw/gates/canary.py`, `src/mymlfw/submit/png_zip.py` |
+| Host scorers (`png_parity`, …) | `src/mymlfw/metrics/registry.py`, `src/mymlfw/metrics/siclink.py` |
 | Recipe match | `src/mymlfw/campaign/match.py` |
-| Retrieval and advise | `src/mymlfw/rag/` |
+| Retrieval and advise | `src/mymlfw/rag/` (typed kills: `rag/traps.py`) |
 | CLI flags | `src/mymlfw/__main__.py` |
 | Agent index | `llms.txt` and the packaged copy beside it |
 | SaaS Mongo / ScopedCollection | `src/mymlfw/saas/db/` |
 | SaaS API contracts | `src/mymlfw/saas/schemas.py`, `contracts/openapi.json` |
 | FastAPI gateway | `src/mymlfw/api/` |
-| MCP handlers | `src/mymlfw/mcp/` |
+| MCP handlers | `src/mymlfw/mcp/` (`casmi_tools.py` for ranked/Kaggle ops) |
 | Agent ↔ Studio via MCP | [docs/how-to/agent-mcp-campaign-sync.md](docs/how-to/agent-mcp-campaign-sync.md), MCP prompt `campaign_sync` |
 | SaaS web console | `web/` |
 | SaaS env / cloud how-to | `docs/reference/saas-env.md`, `docs/how-to/connect-cloud-runners.md` |

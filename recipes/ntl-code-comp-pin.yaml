@@ -1,0 +1,40 @@
+id: ntl-code-comp-pin
+tags: [text, closed-set, ntl, code-comp, pin]
+summary: >
+  NTL / closed-set authorship pin laws as machine checks — debiased Full∧Imb ≥+100bp,
+  append-only cands, Llama mount allowlist, damped Sinkhorn + --post 0, class order = model name.
+modality: text
+signatures:
+  target_type: multiclass
+  has_group_col: true
+  has_text_col: true
+  n_classes_min: 10
+checks:
+  - debiased_full_imb_bp_100
+  - append_only_candidate_dirs
+  - protect_fire_kernel_versions
+  - mount_allowlist_llama_alexchilton
+  - ban_metaresearch_copytree
+  - post_damped_sinkhorn_post_0
+  - ban_hungarian_uniform_sinkhorn_1
+  - class_order_model_name_string
+known_traps:
+  - experiment_id: trap_sibling_odds
+    variable: sibling_odds_rebrand
+    note: sibling_odds_rebrand
+  - experiment_id: trap_typo
+    variable: typo_micro_variant
+    note: typo_micro_variant
+  - experiment_id: trap_mps
+    variable: o3_o4_mps_fail
+    note: o3_o4_mps_fail
+  - experiment_id: trap_mix3
+    variable: areeb_mix3
+    note: areeb_mix3
+proven_wins:
+  - experiment_id: win_l1
+    variable: L1_verbatim
+    note: L1 verbatim before post grid
+  - experiment_id: win_l2
+    variable: L2_margin079
+    note: L2 margin079 specialist

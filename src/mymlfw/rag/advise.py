@@ -18,6 +18,9 @@ from mymlfw.rag.index import clean_text, retrieve
 
 ENGINES = {
     "closed-set-llm-id": "TextBlendEngine",
+    "ntl-code-comp-pin": "TextBlendEngine",
+    "closed-set-bank-decode": "BenchmarkEngine",
+    "casmi-ranked-dual-canary": "RankedCandidateEngine",
     "grouped-text": "TextBlendEngine",
     "ranking": "RankedCandidateEngine",
     "code-agent": "AgentZipEngine",
@@ -410,7 +413,27 @@ def advise(directory, db=None, task: str = "next experiment") -> dict:
             advice_path = dest / "docs" / "MYMLFW_ADVICE.md"
             brief = advice_path.read_text()
             command = f"python -m mymlfw episode add --contest {contest}"
-            steps = format_next_steps(report["next_steps"]) + "\n"
+            from mymlfw.rag.traps import (
+                ledger_kill_notes,
+                prioritize_exact_id_steps,
+            )
+
+            notes = []
+            for key in ("negative", "positive", "patterns"):
+                for chunk in found.get(key) or []:
+                    notes.append(str(chunk.get("text") or chunk.get("chunk_id") or ""))
+            # Typed SiClink / NTL kill tags from local ledger before Sinkhorn/fuse
+            for ledger_cand in (
+                source / "ledger" / "experiments.csv",
+                source / "experiments.csv",
+                dest / "ledger" / "experiments.csv",
+            ):
+                if ledger_cand.is_file():
+                    notes.extend(ledger_kill_notes(ledger_cand))
+                    break
+            ordered = prioritize_exact_id_steps(list(report["next_steps"]), notes)
+            report["next_steps"] = ordered
+            steps = format_next_steps(ordered) + "\n"
             index = brief.rfind(command)
             if index == -1:
                 brief = brief + "\n" + steps

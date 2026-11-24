@@ -26,6 +26,7 @@ With few local experiments, Tier2 archetype playbooks keyed by a dataset fingerp
 | --- | --- |
 | HTTP advise | `POST /v1/projects/{id}/advise` |
 | HTTP brain query | `POST /v1/projects/{id}/brain/query` |
-| MCP | `advise_project`, `query_project_brain` |
+| MCP | `advise_project`, `query_project_brain`, `ingest_vault_brain`, `record_dead_end`, `append_vault_law` |
+| Offline advise | `python -m mymlfw advise` — also injects typed ledger kill tags (`soft_proxy_vs_exact_metric`, …) before Sinkhorn/fuse steps |
 
-Offline contest advise (`python -m mymlfw advise`) remains the SQLite/worktree path documented in [Advise a contest](../how-to/advise-a-contest.md).
+Offline contest advise remains the SQLite/worktree path documented in [Advise a contest](../how-to/advise-a-contest.md). Contest vault files (`PROPRIETARY_KNOWLEDGE_VAULT.md`, `*REPORT*.md`) ingest into dead_ends / axioms via MCP `ingest_vault_brain` or local `ingest` — see [CASMI ranked canary](../how-to/casmi-ranked-canary.md).

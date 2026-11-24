@@ -40,6 +40,8 @@ python -m mymlfw episode recall --task "prompt centering" --data-dir data
 python -m mymlfw ingest --path /path/to/contest --mode auto
 ```
 
+Contest proprietary memory is eligible too: `PROPRIETARY_KNOWLEDGE_VAULT.md`, `*REPORT*.md`, and lever notes. For Studio Project Brain (dead_ends / axioms), bind a project and call MCP `ingest_vault_brain` — [CASMI ranked canary](casmi-ranked-canary.md).
+
 | `--mode` | What is stored |
 | --- | --- |
 | `docs` | Markdown, reStructuredText, YAML, JSON, and `experiments.csv` |

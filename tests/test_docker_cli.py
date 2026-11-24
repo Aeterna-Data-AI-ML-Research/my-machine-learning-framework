@@ -96,7 +96,7 @@ def test_cli_image_version_and_git() -> None:
         check=False,
     )
     assert version.returncode == 0, version.stderr
-    assert "0.3.0" in version.stdout
+    assert "0.4.0" in version.stdout
     git_probe = subprocess.run(
         [
             "docker",

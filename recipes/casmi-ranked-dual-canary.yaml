@@ -1,0 +1,27 @@
+id: casmi-ranked-dual-canary
+tags: [ranking, mrr, casmi, dual-canary, kaggle]
+summary: >
+  CASMI-shaped ranked MRR@25 dual-canary (Panel + HUBS) → SHIP/FAIL;
+  vault→brain dead ends; night-shift score-only (never auto-submit).
+modality: retrieval
+signatures:
+  target_type: ranking
+  has_group_col: false
+  has_text_col: false
+playbook:
+  - dual_canary before every ship (both ΔMRR≥0, R1 L=0)
+  - ingest_vault_brain once per contest bind
+  - record_dead_end on confirmed-large-gap / SpecFold mid-only / metabolic kill
+  - kaggle_submit_lifecycle before GPU kernel submit (refuse IS_RERUN/FAST_COMMIT)
+  - night_shift scores Panel/HUBS overnight; morning digest only — never kaggle_submit
+  - quote_cloud_launch for SpecFold GPU encode (avoid Kaggle T4×2 batch burn)
+  - experiment-dir allocate → immutable casmi26_vN+1 clones
+cli:
+  canary_dual: "python -m mymlfw canary dual --panel Panel120.parquet --hubs HUBS19.parquet --submission ranked.csv"
+  night_shift: "python -m mymlfw canary night-shift --panel … --hubs … --submission … --out digests/ --label R0"
+  mcp: "http://127.0.0.1:8100/mcp + campaign_sync"
+laws_examples:
+  - L10 SpecFold mid-only
+  - L18 metabolic kill
+  - iso_v5 −0.006
+  - AP_LAM0.65 → 0.499

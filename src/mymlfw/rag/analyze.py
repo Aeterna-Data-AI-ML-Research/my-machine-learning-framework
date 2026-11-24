@@ -16,6 +16,9 @@ from mymlfw.rag.index import retrieve
 
 RECIPE_ENGINE = {
     "closed-set-llm-id": "TextBlendEngine",
+    "ntl-code-comp-pin": "TextBlendEngine",
+    "closed-set-bank-decode": "BenchmarkEngine",
+    "casmi-ranked-dual-canary": "RankedCandidateEngine",
     "grouped-text": "TextBlendEngine",
     "ranking": "RankedCandidateEngine",
     "code-agent": "AgentZipEngine",

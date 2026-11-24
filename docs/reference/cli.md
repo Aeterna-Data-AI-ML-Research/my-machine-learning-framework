@@ -1,6 +1,6 @@
 # CLI
 
-Reference for mymlfw 0.3.0. The program is `python -m mymlfw`. `--debug` adds a traceback field to the error JSON. Every other failure is one JSON object on stderr with `error_code` and `suggested_fix`, and the process exits 1.
+Reference for mymlfw 0.4.0. The program is `python -m mymlfw`. `--debug` adds a traceback field to the error JSON. Every other failure is one JSON object on stderr with `error_code` and `suggested_fix`, and the process exits 1.
 
 ## Host vs Docker
 
@@ -19,12 +19,28 @@ Flags below are the ones the parser requires or commonly takes. Defaults are the
 
 | Command | Required | Notes |
 | --- | --- | --- |
-| `version` | | Prints `0.3.0`. |
+| `version` | | Prints `0.4.0`. |
 | `new-contest NAME --dest DIR` | `NAME`, `--dest` | Creates the tree in [Contest layout](contest-layout.md). |
+| `gate debiased --full F.npz --imb I.npz` | panels | Debiased Full∧Imb promote JSON (`--min-bp`, baselines). |
+| `gate pin-check --dir CONTEST` | `--dir` | NTL pin laws (mounts, post, protected FIRE files). |
+| `gate cloud-local --record probe.json` | `--record` | MPS Fold-0 champion gate before RunPod. |
+| `fire status --state PATH` / `fire assert` | `--state` | Daily submit/GPU quotas; refuse identical LIVE SHA / resubmit. |
+| `kaggle verify-notebook --ref A --vs B` | paths | `IDENTICAL` / `FACTORIAL_DIFF` / `UNRELATED` + code SHA. |
+| `kaggle submit-wait` | competition + file + ledger | Submit then poll public score → ledger (`--dry-run` ok). |
+| `canary dual` | `--panel`, `--hubs`, `--submission` | Ranked MRR@25 SHIP/FAIL (both Δ≥0, R1 L=0). |
+| `canary diff` | `--a`, `--b` | R1/R2 churn between ranked CSVs. |
+| `canary night-shift` | panel + hubs + submission + `--out` | Score-only digest; never submits. |
+| `probe score … --noise-band 0.005` | | Verdict `noise` unless Δ clears band (+ optional `--debiased-ok`). |
+| `probe sha … --code` | | Store `code_sha256`; prefers CSV payload SHA inside zips; duplicate → `DUPLICATE_CODE`. |
+| `submit check --kind kaggle_png_csv_zip` | `--file` | PNG-in-CSV zip (mode L, 64×64, ink, AppleDouble, 30200 ids). |
+| `blend optimize --metric SPEC` | | Built-ins, `png_parity`, `ocf_equal_mean`, or `module.path:callable`. See [Metrics](metrics-scorers.md). |
+| `multitask set-score` / `splice` / `promote-check` | `--path` | Equal-mean S=(S1+…+Sk)/k; per-(task,group) splice; Δ/z/full-n gates. |
+| `experiment-dir allocate` / `check` | `--parent`/`--stem` or `--path` | Immutable vN+1 clones; refuse overwrite of pushed `casmi26_v*`. |
+| `lever-registry sync-kills` | `--registry`, `--ledger` | Auto-kill confirmed-large-gap / noise knobs. |
 | `profile-data --dir DIR` | `--dir` | Writes a profile. `--out` sets the path. `--recommend` is accepted and changes nothing: recommendations are always written. |
 | `recipes --match TEXT` | | Substring match on recipe cards. `ranking` returns the ranking card only. |
 | `recipes --show ID` | | Prints one card. |
-| `playbook strategies --modality MOD` | | Strategy ladder for `tabular` / `text` / `vision` / `sequential`. `--json` for machine output. |
+| `playbook strategies --modality MOD` | | Strategy ladder for `tabular` / `text` / `vision` / `sequential` / `neural`. `--json` for machine output. |
 | `playbook shifts --modality MOD --kind KIND` | | Paradigm shifts filtered by venue (`kaggle` \| `standalone`). |
 | `playbook roadmap --modality MOD --kind KIND` | | Prints Stages 1–5 (+ `--shift ID` repeatable). `--baseline`, `--validation`, `--json`. |
 | `playbook catalog --modality MOD --kind KIND` | | Full JSON catalog (same payload as `GET /v1/playbook/catalog`). |
@@ -47,14 +63,31 @@ Flags below are the ones the parser requires or commonly takes. Defaults are the
 
 | Command | Required |
 | --- | --- |
-| `blend optimize` | Repeat `--oof`. `--labels`, `--manifest`. `--metric` is `log_loss` (default), `accuracy`, or `balanced_accuracy`. `--l2` defaults to `0.05`. |
+| `blend optimize` | Repeat `--oof`. `--labels`, `--manifest`. `--metric` / `--scorer`: `log_loss` (default), `accuracy`, `balanced_accuracy`, `png_parity`, `ocf_equal_mean`, or `module.path:callable`. `--l2` defaults to `0.05`. |
 | `blend diversity` | Repeat `--oof` and `--cv`. `--strict` is optional. |
 | `blend reorder-classes` | `--target`, `--source`, `--out`. |
 | `diagnose-oof` | `--oof`, `--train`, `--out`. |
 | `check-shift` | `--train`, `--test`, `--numeric`. |
 | `preflight` | `--ledger`, `--experiment-id`, `--artifact`, `--gate`, `--leak`, `--runtime`, `--kernel`. `--scale-report` with `--require-scale-report`. Optional `--previous-hashes`. |
-| `submit check` | `--kind id_label\|ranked`, `--file`. `--label-col` defaults to `label`. `--classes` is a comma list. `--max-k` defaults to 25. |
+| `submit check` | `--kind id_label\|ranked\|kaggle_png_csv_zip`, `--file`. `--label-col` / `--png-col` / `--n-ids` / `--max-k`. |
+| `multitask set-score` | `--path`, `--task`, `--score`. Optional `--n`, `--group`. |
+| `multitask splice` | `--path`, `--task`, `--group`, `--score`. Optional `--n`. |
+| `multitask promote-check` | `--path`, `--baseline`. Optional `--min-delta`, `--min-z`, `--require-n`. |
 | `simulate-test` | `--train`, `--out`. `--rows` defaults to 25000. `--sample-seconds` defaults to 1. |
+
+## Canary, dirs, levers
+
+| Command | Required |
+| --- | --- |
+| `canary dual` | `--panel`, `--hubs`, `--submission`. Optional `--baseline-panel-mrr`, `--baseline-hubs-mrr`, `--k` (default 25). |
+| `canary diff` | `--a`, `--b`. |
+| `canary night-shift` | `--panel`, `--hubs`, `--submission`, `--out`. Optional `--label` (`R0`…`R3`), baselines. |
+| `experiment-dir allocate` | `--parent`, `--stem`. |
+| `experiment-dir check` | `--path`. |
+| `lever-registry sync-kills` | `--registry`, `--ledger`. |
+| `kaggle submit-wait` | `--competition`, `--file`, `--ledger`, `--experiment-id`. Optional `-k`, `--poll`, `--timeout`, `--dry-run`. |
+
+How-tos: [CASMI ranked canary](../how-to/casmi-ranked-canary.md), [SiClink image / recon](../how-to/siclink-image-recon.md).
 
 ## Kernel, train, cloud
 

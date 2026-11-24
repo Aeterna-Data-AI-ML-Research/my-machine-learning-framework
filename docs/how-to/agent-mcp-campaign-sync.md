@@ -13,6 +13,22 @@ This page is binding for agents connected to `mymlfw-mcp`. Mirror lives in [`src
 
 Ops → Agent / MCP card shows `http://127.0.0.1:8100/mcp`. Stdio (`python -m mymlfw.mcp`) remains available for non-Compose agents.
 
+### Contest-enforcer: `ntl_status`
+
+After MCP is healthy, call **`ntl_status`** (optional `contest_dir` pointing at the on-disk campaign) for pin id, `N_rem` submits/GPU, held candidate dirs, last gate JSON, LIVE kernel SHA, and the fire-planner snapshot. Orient: `list_projects` → `ntl_status` → `get_project_dashboard` before proposing Sinkhorn/fuse levers.
+
+### CASMI / ranked dual-canary
+
+Point the Cursor project MCP at `http://127.0.0.1:8100/mcp` and run `campaign_sync`. Bind the contest Studio project, then:
+
+1. `ingest_vault_brain(project_id, contest_dir, idempotency_key)` — vault + `*REPORT*.md` → dead_ends/axioms
+2. `query_project_brain(scope="dead_ends")` before SpecFold / `_AP_KEEP1` / `_NPX_LAM` forks
+3. `dual_canary` (or CLI `canary dual --panel … --hubs … --submission …`) — SHIP only if both ΔMRR≥0 and R1 L=0
+4. `kaggle_submit_lifecycle` before GPU kernel submit — refuse IS_RERUN / FAST_COMMIT / `enable_gpu=False`
+5. `kaggle_refresh` after submit; `record_dead_end` / `append_vault_law` on kills; `diff_ranked_submissions` for R1/R2 churn
+
+Night-Shift never submits: use `canary night-shift` (score-only digest) or Autopilot with `feature_flags.night_shift`. Prefer `quote_cloud_launch` for SpecFold GPU encode instead of burning Kaggle T4×2 batch.
+
 ## Tell a running Cursor agent (paste as follow-up)
 
 Use this when the agent is already mid-campaign (training, stacking, submitting) and Studio is stale. MCP must already be configured for that Cursor project (`http://127.0.0.1:8100/mcp` + Bearer PAT from Studio Settings).
@@ -37,7 +53,7 @@ Chat alone does not update Overview. Missions, progress %, lever status, dead-en
 
 ## Report missing MCP features
 
-When you need a call that does not exist (example: `kaggle_refresh` from MCP), or a tool fails for a product reason:
+When you need a call that does not exist, or a tool fails for a product reason:
 
 1. `report_mcp_gap` with `needed_capability`, what you tried (`context`), what you did instead (`workaround`), `severity` (`blocker` | `annoying` | `nice_to_have`), and optional `suggested_tool_name` / `suggested_args_schema`.
 2. Tell the human in chat (one short line + the gap id).
@@ -85,8 +101,11 @@ Example agent narrative → MCP calls:
 | “Building GBDT + digit features / adapting 0.95154 approach” | `propose_lever_execution(project_id, variable="<one variable>")` — one open lever at a time; if refused, pick another variable |
 | “Hillclimb too slow — switching to logistic stack” | Progress note via `report_mission_progress`; if this is a new variable, `propose_lever_execution` first |
 | “Artifact stack CV is 0.95097” | `report_mission_progress(…, note="artifact stack CV 0.95097", percent=70)` and include fold scores when completing |
-| “Submitting… scored 0.95143 (top ~0.95192)” | `complete_mission(…, outcome="succeeded", notes="public 0.95143; top ~0.95192; submission …", fold_scores=[…])` then refresh Studio Kaggle intel (HTTP `POST /v1/projects/{id}/kaggle/refresh` with human/API token — not an MCP tool yet) |
-| Dead end (e.g. hillclimb on 700k rows) | Prefer recording via Studio/API dead-ends or brain ingest so `query_project_brain(scope="dead_ends")` remembers; do not repeat a killed variable |
+| “Submitting… scored 0.95143 (top ~0.95192)” | `complete_mission(…, outcome="succeeded", notes="public 0.95143; top ~0.95192; submission …", fold_scores=[…])` then `kaggle_refresh(project_id, competition, idempotency_key)` |
+| Dead end (e.g. hillclimb on 700k rows) | `record_dead_end(project_id, variable, lesson, idempotency_key)` so `query_project_brain(scope="dead_ends")` remembers; do not repeat a killed variable |
+| CASMI ranked ship | `dual_canary(panel, hubs, ranked.csv)` → SHIP only if both ΔMRR≥0 and R1 L=0; else FAIL |
+| Vault / REPORT laws | `ingest_vault_brain(project_id, contest_dir, idempotency_key)` once per bind; `append_vault_law` for new laws |
+| Kernel GPU wave | `kaggle_submit_lifecycle` — refuse when IS_RERUN/FAST_COMMIT/enable_gpu=False |
 | Validation / Handbook roadmap stages | `list_roadmap` → `add_roadmap_strategy(title, plan, priority, idempotency_key)` per stage; mark done with `update_roadmap_strategy(..., status="executed", result=…, result_metric=…)` |
 
 ## Licenses and submit gates

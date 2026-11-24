@@ -1,6 +1,6 @@
 # Run the Campaign SaaS stack
 
-How-to (mymlfw 0.3.0). Bring up the local control plane (API, web, Mongo, Redis, MinIO, worker, MCP) in Docker — no host Python required for day-to-day Studio or contest CLI.
+How-to (mymlfw 0.4.0). Bring up the local control plane (API, web, Mongo, Redis, MinIO, worker, MCP) in Docker — no host Python required for day-to-day Studio or contest CLI.
 
 ## Prerequisites
 

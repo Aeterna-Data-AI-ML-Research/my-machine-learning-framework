@@ -1,8 +1,18 @@
-mymlfw 0.3.0
+mymlfw 0.4.0
 docs docs/index.md
 
 CLI python -m mymlfw version
 Docker make cli CMD='version'  # or ./deploy/run-cli.sh version
+MCP ntl_status  # pin / N_rem / gate / fire plan
+MCP dual_canary / kaggle_refresh / record_dead_end / ingest_vault_brain
+CLI python -m mymlfw canary dual --panel P.parquet --hubs H.parquet --submission ranked.csv
+CLI python -m mymlfw blend optimize --metric png_parity --oof …
+CLI python -m mymlfw multitask splice --path mt.json --task t1 --group g0 --score 0.5
+CLI python -m mymlfw submit check --kind kaggle_png_csv_zip --file sub.zip
+CLI python -m mymlfw gate debiased --full F.npz --imb I.npz
+CLI python -m mymlfw kaggle verify-notebook --ref A.ipynb --vs B.ipynb
+from mymlfw.gates.canary import dual_canary
+from mymlfw.metrics.siclink import png_parity
 import mymlfw
 
 CLI python -m mymlfw profile-data --dir data/
@@ -105,7 +115,10 @@ CLI python -m mymlfw sync-docs
 from mymlfw.scaffold import sync_llms_index
 
 from mymlfw.cv import run_oof
-from mymlfw.metrics import balanced_accuracy, mrr_at_k
+from mymlfw.metrics import balanced_accuracy, mrr_at_k, png_parity, ocf_equal_mean
+from mymlfw.gates import dual_canary
+from mymlfw.campaign import splice_task_group, assert_promote_gates
+from mymlfw.submit import check_kaggle_png_csv_zip
 from mymlfw.train import SklearnHead, TwinHead
 from mymlfw.engines import AgentZipEngine, BenchmarkEngine, PortfolioEngine, RankedCandidateEngine, TextBlendEngine
 CLI python -m mymlfw cloud launch --project NAME --role primary --gpu T4 --command CMD --idle-kill 30 --max-runtime 120 --ledger ledger/experiments.csv --experiment-id ID --baseline-id BASE --variable NAME --band-low 0 --band-high 1 --out cloud/rendered.sh
@@ -123,12 +136,21 @@ DO NOT put weights in the notebook payload.
 DO NOT enable kernel internet.
 DO NOT register a second variable in one probe.
 DO NOT launch cloud without CLOUD_APPROVAL.
+DO NOT ship ranked CASMI without dual_canary SHIP (both ΔMRR≥0, R1 L=0).
+DO NOT GPU-submit kernels with IS_RERUN/FAST_COMMIT or enable_gpu=False.
 
 <!-- mymlfw-index -->
 recipe benchmark: items.jsonl plus a scorer callable.
+recipe casmi-ranked-dual-canary: CASMI-shaped ranked MRR@25 dual-canary (Panel + HUBS) → SHIP/FAIL; vault→brain dead ends; night-shift score-only (never auto-submit).
+
 recipe circuit-portfolio: Verified portfolio and receipt hashes.
-recipe closed-set-llm-id: Shrunk TwinHead, log-linear blend, and a class-bias prior.
+recipe closed-set-bank-decode: Candidate bank + similarity + Exact-metric MBR + per-group τ/CSLS. For glyph-ID / structured→image contests — not closed-set-llm-id TwinHead text.
+
+recipe closed-set-llm-id: Shrunk TwinHead, log-linear blend, class-bias prior. For NTL pin laws / debiased promote use recipe ntl-code-comp-pin (machine checks).
+
 recipe code-agent: Two-stage LoRA, syntax and exec rewards, zip bundle.
 recipe grouped-text: Text and a group column with no class-count floor.
+recipe ntl-code-comp-pin: NTL / closed-set authorship pin laws as machine checks — debiased Full∧Imb ≥+100bp, append-only cands, Llama mount allowlist, damped Sinkhorn + --post 0, class order = model name.
+
 recipe ranking: Ranked channels, MRR, one variable per probe.
 <!-- /mymlfw-index -->

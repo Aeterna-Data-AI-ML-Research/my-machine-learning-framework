@@ -41,3 +41,24 @@ def mrr_at_k(ranked, truth, k: int | None = None) -> float:
         if candidate == truth:
             return 1.0 / index
     return 0.0
+
+
+# Pluggable scorers (lazy-safe: registry imports blend only inside score wrappers).
+from mymlfw.metrics.registry import (  # noqa: E402
+    list_scorers,
+    ocf_equal_mean,
+    register_scorer,
+    resolve_scorer,
+)
+from mymlfw.metrics.siclink import png_parity, png_parity_bundle  # noqa: E402
+
+__all__ = [
+    "balanced_accuracy",
+    "list_scorers",
+    "mrr_at_k",
+    "ocf_equal_mean",
+    "png_parity",
+    "png_parity_bundle",
+    "register_scorer",
+    "resolve_scorer",
+]

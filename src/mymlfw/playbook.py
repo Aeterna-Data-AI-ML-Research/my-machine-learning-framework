@@ -9,11 +9,11 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-Modality = Literal["tabular", "text", "vision", "sequential"]
+Modality = Literal["tabular", "text", "vision", "sequential", "neural"]
 VenueKind = Literal["kaggle", "standalone"]
 Tier = Literal["default", "escalate", "paradigm"]
 
-MODALITIES: tuple[Modality, ...] = ("tabular", "text", "vision", "sequential")
+MODALITIES: tuple[Modality, ...] = ("tabular", "text", "vision", "sequential", "neural")
 VENUE_KINDS: tuple[VenueKind, ...] = ("kaggle", "standalone")
 
 _STRATEGY_CATALOG: dict[str, list[dict[str, str]]] = {
@@ -157,6 +157,42 @@ _STRATEGY_CATALOG: dict[str, list[dict[str, str]]] = {
             ),
         },
     ],
+    # Cortex spikes / BCI / structured→image (SiClink): not ConvNeXt-first.
+    "neural": [
+        {
+            "id": "neu_psth",
+            "tier": "default",
+            "title": "PSTH / trial features + linear or trees",
+            "detail": (
+                "Spike counts, PSTH bins, session covariates — lock CV before any decoder."
+            ),
+        },
+        {
+            "id": "neu_bank",
+            "tier": "escalate",
+            "title": "Closed-set candidate bank + similarity",
+            "detail": (
+                "Build a glyph/ID bank; retrieve neighbors before generative refine."
+            ),
+        },
+        {
+            "id": "neu_mbr",
+            "tier": "escalate",
+            "title": "Exact-metric MBR + per-group τ/CSLS",
+            "detail": (
+                "Decode with the contest metric (e.g. OCF), not soft proxies; "
+                "calibrate τ/CSLS per group."
+            ),
+        },
+        {
+            "id": "neu_gen",
+            "tier": "paradigm",
+            "title": "Optional generative refine on bank winners",
+            "detail": (
+                "Only after bank+MBR plateaus — do not start with ConvNeXt on spikes."
+            ),
+        },
+    ],
 }
 
 _PARADIGM_SHIFTS: list[dict[str, Any]] = [
@@ -258,6 +294,16 @@ _PARADIGM_SHIFTS: list[dict[str, Any]] = [
             "use detection heads early after a frozen embed baseline."
         ),
         "when": "vision",
+        "venues": ["kaggle", "standalone"],
+    },
+    {
+        "id": "structured_to_image",
+        "title": "Structured / spikes → image bank (not vision ladder)",
+        "detail": (
+            "Cortex spikes or tabular→glyph contests: use modality=neural "
+            "(PSTH → bank → Exact-metric MBR). Do not default to ConvNeXt."
+        ),
+        "when": "neural",
         "venues": ["kaggle", "standalone"],
     },
 ]
@@ -364,6 +410,7 @@ def build_seed_roadmap(
         "text": "Text / documents",
         "vision": "Images / video / audio",
         "sequential": "Sequential events",
+        "neural": "Neural / BCI / structured→image",
     }.get(mod, mod)
     validation_label = {
         "skf5": "5-fold StratifiedKFold",

@@ -1,0 +1,24 @@
+id: closed-set-bank-decode
+tags: [vision, neural, closed-set, bank, ocf, siclink]
+summary: >
+  Candidate bank + similarity + Exact-metric MBR + per-group τ/CSLS.
+  For glyph-ID / structured→image contests — not closed-set-llm-id TwinHead text.
+modality: neural
+signatures:
+  target_type: multiclass
+  has_group_col: true
+  n_classes_min: 2
+known_traps:
+  - experiment_id: trap_soft_proxy
+    variable: soft_proxy_vs_exact_metric
+    note: soft_proxy_vs_exact_metric
+  - experiment_id: trap_subsample
+    variable: fold_subsample_invalid
+    note: fold_subsample_invalid
+  - experiment_id: trap_td
+    variable: td_uniqueness_trap
+    note: td_uniqueness_trap
+proven_wins:
+  - experiment_id: win_bank_mbr
+    variable: exact_metric_mbr
+    note: Exact-metric MBR on bank before generative refine

@@ -56,6 +56,17 @@ def _parser() -> argparse.ArgumentParser:
     score.add_argument("--ledger", required=True)
     score.add_argument("--experiment-id", required=True)
     score.add_argument("--public-score", type=float, required=True)
+    score.add_argument(
+        "--noise-band",
+        type=float,
+        default=None,
+        help="If |public-cv| < band, verdict=noise unless debiased gate also clears.",
+    )
+    score.add_argument(
+        "--debiased-ok",
+        action="store_true",
+        help="Debiased Full∧Imb gate already passed (with --noise-band).",
+    )
     verdict = probe_sub.add_parser("verdict", exit_on_error=False)
     verdict.add_argument("--ledger", required=True)
     verdict.add_argument("--experiment-id", required=True)
@@ -64,6 +75,11 @@ def _parser() -> argparse.ArgumentParser:
     sha = probe_sub.add_parser("sha", exit_on_error=False)
     sha.add_argument("--ledger", required=True)
     sha.add_argument("--experiment-id", required=True)
+    sha.add_argument(
+        "--code",
+        action="store_true",
+        help="Store notebook/code SHA in code_sha256 (duplicate → DUPLICATE_CODE).",
+    )
     sha.add_argument("--artifact", required=True)
 
     blend = sub.add_parser("blend", exit_on_error=False)
@@ -73,7 +89,16 @@ def _parser() -> argparse.ArgumentParser:
     optimize.add_argument("--labels", required=True)
     optimize.add_argument("--manifest", required=True)
     optimize.add_argument("--l2", type=float, default=0.05)
-    optimize.add_argument("--metric", choices=("log_loss", "accuracy", "balanced_accuracy"), default="log_loss")
+    optimize.add_argument(
+        "--metric",
+        default="log_loss",
+        help="Built-in (log_loss|accuracy|balanced_accuracy) or registered / path:callable scorer.",
+    )
+    optimize.add_argument(
+        "--scorer",
+        default=None,
+        help="Alias for --metric when using a plugin id or module.path:callable.",
+    )
     reorder = blend_sub.add_parser("reorder-classes", exit_on_error=False)
     reorder.add_argument("--target", required=True)
     reorder.add_argument("--source", required=True)
@@ -119,11 +144,17 @@ def _parser() -> argparse.ArgumentParser:
     submit = sub.add_parser("submit", exit_on_error=False)
     submit_sub = submit.add_subparsers(dest="submit_cmd")
     check = submit_sub.add_parser("check", exit_on_error=False)
-    check.add_argument("--kind", choices=("id_label", "ranked"), required=True)
+    check.add_argument(
+        "--kind",
+        choices=("id_label", "ranked", "kaggle_png_csv_zip"),
+        required=True,
+    )
     check.add_argument("--file", required=True)
     check.add_argument("--label-col", default="label")
     check.add_argument("--classes", default="")
     check.add_argument("--max-k", type=int, default=25)
+    check.add_argument("--n-ids", type=int, default=30200)
+    check.add_argument("--png-col", default="prediction")
 
     kernel = sub.add_parser("kernel", exit_on_error=False)
     kernel_sub = kernel.add_subparsers(dest="kernel_cmd")
@@ -208,7 +239,7 @@ def _parser() -> argparse.ArgumentParser:
     pb_strategies.add_argument(
         "--modality",
         default="tabular",
-        choices=["tabular", "text", "vision", "sequential"],
+        choices=["tabular", "text", "vision", "sequential", "neural"],
     )
     pb_strategies.add_argument(
         "--json",
@@ -219,7 +250,7 @@ def _parser() -> argparse.ArgumentParser:
     pb_shifts.add_argument(
         "--modality",
         default="tabular",
-        choices=["tabular", "text", "vision", "sequential"],
+        choices=["tabular", "text", "vision", "sequential", "neural"],
     )
     pb_shifts.add_argument(
         "--kind",
@@ -231,7 +262,7 @@ def _parser() -> argparse.ArgumentParser:
     pb_roadmap.add_argument(
         "--modality",
         default="tabular",
-        choices=["tabular", "text", "vision", "sequential"],
+        choices=["tabular", "text", "vision", "sequential", "neural"],
     )
     pb_roadmap.add_argument(
         "--kind",
@@ -259,7 +290,7 @@ def _parser() -> argparse.ArgumentParser:
     pb_catalog.add_argument(
         "--modality",
         default="tabular",
-        choices=["tabular", "text", "vision", "sequential"],
+        choices=["tabular", "text", "vision", "sequential", "neural"],
     )
     pb_catalog.add_argument(
         "--kind",
@@ -345,6 +376,106 @@ def _parser() -> argparse.ArgumentParser:
     kaggle_pkg = kaggle_sub.add_parser("package", exit_on_error=False)
     kaggle_pkg.add_argument("--file", action="append", required=True, dest="files")
     kaggle_pkg.add_argument("--final2", action="append", default=[])
+    kaggle_verify = kaggle_sub.add_parser("verify-notebook", exit_on_error=False)
+    kaggle_verify.add_argument("--ref", required=True, help="Reference notebook path")
+    kaggle_verify.add_argument("--vs", required=True, dest="cand", help="Candidate notebook path")
+    kaggle_wait = kaggle_sub.add_parser("submit-wait", exit_on_error=False)
+    kaggle_wait.add_argument("--competition", required=True)
+    kaggle_wait.add_argument("--file", required=True)
+    kaggle_wait.add_argument("--ledger", required=True)
+    kaggle_wait.add_argument("--experiment-id", required=True)
+    kaggle_wait.add_argument("--message", default="mymlfw submit-wait")
+    kaggle_wait.add_argument("-k", "--kernel", default=None)
+    kaggle_wait.add_argument("--poll", type=float, default=30.0)
+    kaggle_wait.add_argument("--timeout", type=float, default=900.0)
+    kaggle_wait.add_argument("--dry-run", action="store_true")
+
+    multitask = sub.add_parser("multitask", exit_on_error=False)
+    multitask_sub = multitask.add_subparsers(dest="multitask_cmd")
+    mt_set = multitask_sub.add_parser("set-score", exit_on_error=False)
+    mt_set.add_argument("--path", required=True)
+    mt_set.add_argument("--task", required=True)
+    mt_set.add_argument("--score", type=float, required=True)
+    mt_set.add_argument("--n", type=int, default=None)
+    mt_set.add_argument("--group", default=None)
+    mt_splice = multitask_sub.add_parser("splice", exit_on_error=False)
+    mt_splice.add_argument("--path", required=True)
+    mt_splice.add_argument("--task", required=True)
+    mt_splice.add_argument("--group", required=True)
+    mt_splice.add_argument("--score", type=float, required=True)
+    mt_splice.add_argument("--n", type=int, default=None)
+    mt_promo = multitask_sub.add_parser("promote-check", exit_on_error=False)
+    mt_promo.add_argument("--path", required=True)
+    mt_promo.add_argument("--baseline", type=float, required=True)
+    mt_promo.add_argument("--min-delta", type=float, default=0.001)
+    mt_promo.add_argument("--min-z", type=float, default=None)
+    mt_promo.add_argument("--require-n", type=int, default=None)
+
+    canary = sub.add_parser("canary", exit_on_error=False)
+    canary_sub = canary.add_subparsers(dest="canary_cmd")
+    canary_dual = canary_sub.add_parser("dual", exit_on_error=False)
+    canary_dual.add_argument("--panel", required=True, help="Panel truth parquet/csv")
+    canary_dual.add_argument("--hubs", required=True, help="HUBS truth parquet/csv")
+    canary_dual.add_argument("--submission", required=True, help="Ranked CSV")
+    canary_dual.add_argument("--baseline-panel-mrr", type=float, default=None)
+    canary_dual.add_argument("--baseline-hubs-mrr", type=float, default=None)
+    canary_dual.add_argument("--k", type=int, default=25)
+    canary_diff = canary_sub.add_parser("diff", exit_on_error=False)
+    canary_diff.add_argument("--a", required=True, dest="path_a")
+    canary_diff.add_argument("--b", required=True, dest="path_b")
+    canary_night = canary_sub.add_parser("night-shift", exit_on_error=False)
+    canary_night.add_argument("--panel", required=True)
+    canary_night.add_argument("--hubs", required=True)
+    canary_night.add_argument("--submission", required=True)
+    canary_night.add_argument("--out", required=True, help="Digest output dir")
+    canary_night.add_argument("--label", default="R0", help="R0/R1/R2/R3")
+    canary_night.add_argument("--baseline-panel-mrr", type=float, default=None)
+    canary_night.add_argument("--baseline-hubs-mrr", type=float, default=None)
+
+    expdir = sub.add_parser("experiment-dir", exit_on_error=False)
+    expdir_sub = expdir.add_subparsers(dest="expdir_cmd")
+    expdir_alloc = expdir_sub.add_parser("allocate", exit_on_error=False)
+    expdir_alloc.add_argument("--parent", required=True)
+    expdir_alloc.add_argument("--stem", required=True)
+    expdir_check = expdir_sub.add_parser("check", exit_on_error=False)
+    expdir_check.add_argument("--path", required=True)
+
+    lever_reg = sub.add_parser("lever-registry", exit_on_error=False)
+    lever_reg_sub = lever_reg.add_subparsers(dest="lever_reg_cmd")
+    lever_sync = lever_reg_sub.add_parser("sync-kills", exit_on_error=False)
+    lever_sync.add_argument("--registry", required=True)
+    lever_sync.add_argument("--ledger", required=True)
+
+    gate = sub.add_parser("gate", exit_on_error=False)
+    gate_sub = gate.add_subparsers(dest="gate_cmd")
+    gate_deb = gate_sub.add_parser("debiased", exit_on_error=False)
+    gate_deb.add_argument("--full", required=True, help="Full panel .npz (y_true,y_pred)")
+    gate_deb.add_argument("--imb", required=True, help="Imbalanced panel .npz")
+    gate_deb.add_argument("--baseline-full", type=float, default=None)
+    gate_deb.add_argument("--baseline-imb", type=float, default=None)
+    gate_deb.add_argument("--min-bp", type=float, default=100.0)
+    gate_deb.add_argument("--out", default=None, help="Write gate JSON snapshot")
+    gate_pin = gate_sub.add_parser("pin-check", exit_on_error=False)
+    gate_pin.add_argument("--dir", required=True, dest="contest_dir")
+    gate_pin.add_argument("--config", default=None)
+    gate_pin.add_argument("--mount", action="append", default=[])
+    gate_pin.add_argument("--post-mode", default=None)
+    gate_pin.add_argument("--post", type=float, default=None)
+    gate_pin.add_argument("--overwrite", action="append", default=[])
+    gate_cloud = gate_sub.add_parser("cloud-local", exit_on_error=False)
+    gate_cloud.add_argument("--record", required=True, help="Local MPS Fold-0 probe JSON")
+    gate_cloud.add_argument("--min-params", type=int, default=300_000)
+    gate_cloud.add_argument("--min-delta", type=float, default=0.5)
+
+    fire = sub.add_parser("fire", exit_on_error=False)
+    fire_sub = fire.add_subparsers(dest="fire_cmd")
+    fire_status = fire_sub.add_parser("status", exit_on_error=False)
+    fire_status.add_argument("--state", required=True)
+    fire_plan = fire_sub.add_parser("assert", exit_on_error=False)
+    fire_plan.add_argument("--state", required=True)
+    fire_plan.add_argument("--kernel-id", required=True)
+    fire_plan.add_argument("--code-sha", default=None)
+    fire_plan.add_argument("--identical-to-live", action="store_true")
 
     gitp = sub.add_parser("git", exit_on_error=False)
     gitp.add_argument("--installation-id", default="")
@@ -506,9 +637,173 @@ def _dispatch(args) -> int:
         else:
             print(render_provenance_ascii_board(credits))
         return 0
+    if args.command == "canary":
+        if args.canary_cmd == "dual":
+            from mymlfw.gates.canary import dual_canary
+
+            report = dual_canary(
+                panel_path=args.panel,
+                hubs_path=args.hubs,
+                submission_path=args.submission,
+                baseline_panel_mrr=args.baseline_panel_mrr,
+                baseline_hubs_mrr=args.baseline_hubs_mrr,
+                k=args.k,
+            )
+            print(json.dumps(report))
+            return 0 if report.get("verdict") == "SHIP" else 1
+        if args.canary_cmd == "diff":
+            from mymlfw.gates.canary import diff_ranked_submissions
+
+            print(json.dumps(diff_ranked_submissions(args.path_a, args.path_b)))
+            return 0
+        if args.canary_cmd == "night-shift":
+            from mymlfw.campaign.night_shift_score import run_score_only_canary
+
+            digest = run_score_only_canary(
+                panel_path=args.panel,
+                hubs_path=args.hubs,
+                submission_path=args.submission,
+                out_dir=args.out,
+                label=args.label,
+                baseline_panel_mrr=args.baseline_panel_mrr,
+                baseline_hubs_mrr=args.baseline_hubs_mrr,
+            )
+            print(json.dumps(digest))
+            return 0
+        raise MymlfwError(
+            "CANARY_CMD",
+            "Unknown canary subcommand.",
+            suggested_fix="Use dual, diff, or night-shift.",
+        )
+    if args.command == "experiment-dir":
+        from mymlfw.campaign.immutable_dirs import (
+            allocate_version_dir,
+            assert_immutable_experiment_dir,
+        )
+
+        if args.expdir_cmd == "allocate":
+            path = allocate_version_dir(args.parent, args.stem)
+            print(json.dumps({"path": str(path), "stem": path.name}))
+            return 0
+        if args.expdir_cmd == "check":
+            assert_immutable_experiment_dir(args.path)
+            print(json.dumps({"ok": True, "path": args.path}))
+            return 0
+        raise MymlfwError(
+            "EXPDIR_CMD",
+            "Unknown experiment-dir subcommand.",
+            suggested_fix="Use allocate or check.",
+        )
+    if args.command == "lever-registry":
+        if args.lever_reg_cmd == "sync-kills":
+            from mymlfw.campaign.lever_registry import (
+                load_lever_registry,
+                save_lever_registry,
+                sync_kills_from_ledger,
+            )
+
+            data = load_lever_registry(args.registry)
+            data = sync_kills_from_ledger(data, args.ledger)
+            save_lever_registry(args.registry, data)
+            print(json.dumps({"killed": data.get("killed", []), "n": len(data.get("killed") or [])}))
+            return 0
+        raise MymlfwError(
+            "LEVER_REG_CMD",
+            "Unknown lever-registry subcommand.",
+            suggested_fix="Use sync-kills.",
+        )
+    if args.command == "gate":
+        if args.gate_cmd == "debiased":
+            from mymlfw.gates.debiased import debiased_promote
+            from mymlfw.gates.pin import write_gate_snapshot
+
+            report = debiased_promote(
+                full_panel=args.full,
+                imb_panel=args.imb,
+                baseline_full=args.baseline_full,
+                baseline_imb=args.baseline_imb,
+                min_bp=args.min_bp,
+            )
+            if args.out:
+                write_gate_snapshot(args.out, report)
+            print(json.dumps(report))
+            return 0
+        if args.gate_cmd == "pin-check":
+            from mymlfw.gates.pin import check_ntl_pin_laws
+
+            report = check_ntl_pin_laws(
+                contest_dir=args.contest_dir,
+                mount_specs=args.mount,
+                post_mode=args.post_mode,
+                post_value=args.post,
+                overwrite_paths=args.overwrite,
+                pin_config=args.config,
+            )
+            print(json.dumps(report))
+            return 0 if report.get("ok") else 1
+        if args.gate_cmd == "cloud-local":
+            from mymlfw.gates.cloud import assert_local_champion_gate
+
+            report = assert_local_champion_gate(
+                args.record, min_params=args.min_params, min_delta=args.min_delta
+            )
+            print(json.dumps(report))
+            return 0
+        raise MymlfwError(
+            "GATE_CMD",
+            "Unknown gate subcommand.",
+            suggested_fix="Use debiased, pin-check, or cloud-local.",
+        )
+    if args.command == "fire":
+        from mymlfw.campaign.fire_planner import (
+            assert_can_fire,
+            load_fire_state,
+            plan_snapshot,
+        )
+
+        state = load_fire_state(args.state)
+        if args.fire_cmd == "status":
+            print(json.dumps(plan_snapshot(state)))
+            return 0
+        if args.fire_cmd == "assert":
+            report = assert_can_fire(
+                state,
+                kernel_id=args.kernel_id,
+                code_sha=args.code_sha,
+                identical_to_live=bool(args.identical_to_live),
+            )
+            print(json.dumps(report))
+            return 0
+        raise MymlfwError(
+            "FIRE_CMD",
+            "Unknown fire subcommand.",
+            suggested_fix="Use status or assert.",
+        )
     if args.command == "kaggle":
         from mymlfw.saas.kaggle_service import intel_panel, package_submission
 
+        if args.kaggle_cmd == "verify-notebook":
+            from mymlfw.kaggle_notebook import verify_notebook
+
+            report = verify_notebook(ref_path=args.ref, cand_path=args.cand)
+            print(json.dumps(report))
+            return 0
+        if args.kaggle_cmd == "submit-wait":
+            from mymlfw.kaggle_submit_wait import submit_and_wait
+
+            report = submit_and_wait(
+                competition=args.competition,
+                file_path=args.file,
+                ledger_path=args.ledger,
+                experiment_id=args.experiment_id,
+                message=args.message,
+                kernel=args.kernel,
+                poll_seconds=args.poll,
+                timeout_seconds=args.timeout,
+                dry_run=bool(args.dry_run),
+            )
+            print(json.dumps(report))
+            return 0
         if args.kaggle_cmd == "package":
             print(
                 json.dumps(
@@ -597,8 +892,23 @@ def _dispatch(args) -> int:
     if args.command == "probe" and args.probe_cmd == "score":
         from mymlfw.campaign.ledger import record_public_score
 
-        row = record_public_score(args.ledger, args.experiment_id, args.public_score)
-        print(json.dumps({"experiment_id": row["experiment_id"], "verdict": row["verdict"], "cv_lb_gap": row["cv_lb_gap"]}))
+        row = record_public_score(
+            args.ledger,
+            args.experiment_id,
+            args.public_score,
+            noise_band=args.noise_band,
+            debiased_promote_ok=bool(args.debiased_ok),
+        )
+        print(
+            json.dumps(
+                {
+                    "experiment_id": row["experiment_id"],
+                    "verdict": row["verdict"],
+                    "cv_lb_gap": row["cv_lb_gap"],
+                    "suggested_verdict": row.get("suggested_verdict"),
+                }
+            )
+        )
         return 0
     if args.command == "probe" and args.probe_cmd == "verdict":
         from mymlfw.campaign.ledger import set_verdict
@@ -607,11 +917,91 @@ def _dispatch(args) -> int:
         print(json.dumps({"experiment_id": row["experiment_id"], "verdict": row["verdict"]}))
         return 0
     if args.command == "probe" and args.probe_cmd == "sha":
-        from mymlfw.campaign.ledger import set_artifact_sha
+        from mymlfw.campaign.ledger import set_artifact_sha, set_code_sha
+        from mymlfw.kaggle_notebook import prefer_csv_payload_sha
 
-        row = set_artifact_sha(args.ledger, args.experiment_id, _file_sha256(args.artifact))
-        print(json.dumps({"experiment_id": row["experiment_id"], "artifact_sha256": row["artifact_sha256"]}))
+        # Prefer inner CSV SHA when Kaggle auto-extracts *.zip
+        payload = prefer_csv_payload_sha(args.artifact)
+        digest = payload["sha256"]
+        if getattr(args, "code", False):
+            row = set_code_sha(args.ledger, args.experiment_id, digest)
+            print(
+                json.dumps(
+                    {
+                        "experiment_id": row["experiment_id"],
+                        "code_sha256": row.get("code_sha256"),
+                        "verdict": row.get("verdict"),
+                        "payload": payload,
+                    }
+                )
+            )
+        else:
+            row = set_artifact_sha(args.ledger, args.experiment_id, digest)
+            print(
+                json.dumps(
+                    {
+                        "experiment_id": row["experiment_id"],
+                        "artifact_sha256": row["artifact_sha256"],
+                        "payload": payload,
+                    }
+                )
+            )
         return 0
+    if args.command == "multitask":
+        from mymlfw.campaign.multitask import (
+            assert_promote_gates,
+            load_multitask,
+            save_multitask,
+            set_task_score,
+            splice_task_group,
+        )
+
+        data = load_multitask(args.path)
+        if args.multitask_cmd == "set-score":
+            data = set_task_score(
+                data,
+                task_id=args.task,
+                score=args.score,
+                n=args.n,
+                group=args.group,
+            )
+            save_multitask(args.path, data)
+            print(json.dumps({"equal_mean": data.get("equal_mean"), "tasks": data.get("tasks")}))
+            return 0
+        if args.multitask_cmd == "splice":
+            data = splice_task_group(
+                data,
+                task_id=args.task,
+                group=args.group,
+                score=args.score,
+                n=args.n,
+            )
+            save_multitask(args.path, data)
+            print(
+                json.dumps(
+                    {
+                        "equal_mean": data.get("equal_mean"),
+                        "tasks": data.get("tasks"),
+                        "n_splices": len(data.get("splices") or []),
+                    }
+                )
+            )
+            return 0
+        if args.multitask_cmd == "promote-check":
+            report = assert_promote_gates(
+                data,
+                baseline_equal_mean=args.baseline,
+                min_delta=args.min_delta,
+                min_z=args.min_z,
+                require_full_fold_n=args.require_n,
+            )
+            print(json.dumps(report))
+            return 0
+        raise MymlfwError(
+            "MULTITASK_CMD",
+            "Unknown multitask subcommand.",
+            suggested_fix="Use set-score, splice, or promote-check.",
+        )
     if args.command == "blend" and args.blend_cmd == "optimize":
         import pandas as pd
 
@@ -623,10 +1013,11 @@ def _dispatch(args) -> int:
         labels = pd.read_csv(args.labels)
         column = "label" if "label" in labels.columns else labels.columns[-1]
         y = labels[column].to_numpy()
+        metric_name = args.scorer or args.metric
         weights = optimize_weights(
             bundles,
             y,
-            lambda truth, bundle: score_bundle(truth, bundle, args.metric),
+            lambda truth, bundle: score_bundle(truth, bundle, metric_name),
             l2=args.l2,
         )
         write_manifest(args.manifest, weights, "log_linear", artifact_sha256="")
@@ -705,6 +1096,14 @@ def _dispatch(args) -> int:
 
         from mymlfw.submit import check_id_label, check_ranked_topk
 
+        if args.kind == "kaggle_png_csv_zip":
+            from mymlfw.submit.png_zip import check_kaggle_png_csv_zip
+
+            report = check_kaggle_png_csv_zip(
+                args.file, n_ids=args.n_ids, png_col=args.png_col
+            )
+            print(json.dumps(report))
+            return 0
         frame = pd.read_csv(args.file)
         if args.kind == "id_label":
             classes = [part.strip() for part in args.classes.split(",") if part.strip()]

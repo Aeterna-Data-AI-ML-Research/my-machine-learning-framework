@@ -25,6 +25,17 @@ from mymlfw.rag.index import (
 from mymlfw.rag.store import Store
 
 DOC_SUFFIXES = {".md", ".rst", ".yaml", ".yml", ".json"}
+# Contest proprietary memory (local DB only — never upload without explicit flag).
+PROPRIETARY_ALLOWLIST = (
+    "PROPRIETARY_PLAYBOOK.md",
+    "PROPRIETARY_KNOWLEDGE_VAULT.md",
+    "CURRENT_STATE.md",
+    "artifacts/CURRENT_STATE.md",
+    "artifacts/CURRENT_PIN.txt",
+    "FIRE_KERNEL_VERSIONS.json",
+)
+# CASMI / contest reports (basename match or *REPORT*.md)
+REPORT_NAME_HINTS = ("REPORT", "VAULT", "LAW", "DEAD_END")
 ML_WORDS = (
     "loss",
     "metric",
@@ -82,6 +93,14 @@ def _eligible(path: Path, mode: str) -> bool:
     suffix = path.suffix.lower()
     if skipped_file(path):
         return False
+    rel = str(path).replace("\\", "/")
+    if any(rel.endswith(name) or path.name == Path(name).name for name in PROPRIETARY_ALLOWLIST):
+        return True
+    upper_name = path.name.upper()
+    if suffix in {".md", ".txt"} and any(hint in upper_name for hint in REPORT_NAME_HINTS):
+        return True
+    if "lever" in path.name.lower() and suffix in {".md", ".txt"}:
+        return True
     if mode == "notes":
         return suffix in {".md", ".rst"} or path.name == "experiments.csv"
     if suffix in DOC_SUFFIXES or path.name == "experiments.csv":

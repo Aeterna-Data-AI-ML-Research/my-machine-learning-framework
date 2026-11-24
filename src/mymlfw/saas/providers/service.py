@@ -313,9 +313,36 @@ class CloudProviderService:
         gpu_type: str,
         quote_accepted_micros_hr: int | None = None,
         spot: bool = True,
+        local_probe_record: str | dict | None = None,
+        skip_local_champion_gate: bool = False,
     ) -> RunnerResponse:
         """Two-phase saga: insert ``provisioning`` runner, then create remote."""
         self.require_flag()
+        import os
+
+        enforce = (
+            not skip_local_champion_gate
+            and (
+                local_probe_record is not None
+                or os.environ.get("MYMLFW_ENFORCE_CLOUD_GATE", "").strip() in {"1", "true", "yes"}
+                or bool(os.environ.get("MYMLFW_LOCAL_PROBE_RECORD", "").strip())
+            )
+        )
+        if enforce:
+            record = local_probe_record or os.environ.get("MYMLFW_LOCAL_PROBE_RECORD")
+            if not record:
+                raise CloudProviderError(
+                    "CLOUD_BLOCKED",
+                    "Pass local_probe_record / MYMLFW_LOCAL_PROBE_RECORD "
+                    "(MPS Fold-0 champion JSON) before launch",
+                )
+            from mymlfw.errors import MymlfwError
+            from mymlfw.gates.cloud import assert_local_champion_gate
+
+            try:
+                assert_local_champion_gate(record)
+            except MymlfwError as exc:
+                raise CloudProviderError(exc.error_code, str(exc)) from exc
         quote = self.quote_launch(provider=provider, gpu_type=gpu_type)
         if quote_accepted_micros_hr is None:
             raise CloudProviderError(

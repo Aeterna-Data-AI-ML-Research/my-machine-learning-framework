@@ -97,6 +97,9 @@ def build_mcp_server(
             "Auth: Authorization Bearer PAT (mcp:worker). Mutating tools need idempotency_key.\n"
             "Orient: list_projects → get_project_dashboard → optional advise_project / "
             "query_project_brain.\n"
+            "CASMI: dual_canary before ship; ingest_vault_brain once; record_dead_end on kills; "
+            "kaggle_refresh + kaggle_submit_lifecycle after kernel runs "
+            "(refuse IS_RERUN/FAST_COMMIT dummies).\n"
             "Work: get_next_mission → report_mission_progress(note, percent) on milestones "
             "(data pulled, CV number, submit started) → complete_mission(outcome, "
             "fold_scores, notes with public/CV/submission ref).\n"
@@ -123,6 +126,35 @@ def build_mcp_server(
             "3. launch_cloud_runner(..., cost_estimate_micros_hr from quote, "
             "idempotency_key)\n"
             "Never echo API keys. Stop with stop_cloud_runner(idempotency_key)."
+        )
+
+    @server.tool(
+        name="ntl_status",
+        description=(
+            "Contest-enforcer status: pin id, N_rem submits/GPU, held candidate dirs, "
+            "last gate JSON, LIVE kernel SHA, fire-planner snapshot. Pass contest_dir "
+            "when the campaign lives on disk beside Studio."
+        ),
+    )
+    async def ntl_status(
+        ctx: Context,
+        project_id: str | None = None,
+        contest_dir: str | None = None,
+        fire_state_path: str | None = None,
+        gate_json_path: str | None = None,
+        pin_id: str | None = None,
+        pat: str | None = None,
+    ) -> dict[str, Any]:
+        rt = _runtime(ctx)
+        return await mcp_tools.tool_ntl_status(
+            pats=rt.pats,
+            headers=_headers(ctx),
+            pat=pat,
+            project_id=project_id,
+            contest_dir=contest_dir,
+            fire_state_path=fire_state_path,
+            gate_json_path=gate_json_path,
+            pin_id=pin_id,
         )
 
     @server.tool(
@@ -591,6 +623,7 @@ def build_mcp_server(
             pats=rt.pats,
             headers=_headers(ctx),
             pat=pat,
+            mongo_client=rt.mongo_client,
         )
 
     @server.tool(
@@ -683,6 +716,227 @@ def build_mcp_server(
             headers=_headers(ctx),
             pat=pat,
             idempotency_key=idempotency_key,
+        )
+
+    @server.tool(
+        name="kaggle_refresh",
+        description=(
+            "Poll Kaggle submissions/LB/kernels into Project Brain intel. "
+            "Pass live=false + discussions/kernels to seed cache without API. "
+            "Requires idempotency_key."
+        ),
+    )
+    async def kaggle_refresh(
+        project_id: str,
+        competition: str,
+        idempotency_key: str,
+        ctx: Context,
+        live: bool = True,
+        pat: str | None = None,
+    ) -> dict[str, Any]:
+        rt = _runtime(ctx)
+        from mymlfw.mcp.casmi_tools import tool_kaggle_refresh
+
+        return await tool_kaggle_refresh(
+            project_id=project_id,
+            competition=competition,
+            pats=rt.pats,
+            headers=_headers(ctx),
+            pat=pat,
+            live=live,
+            idempotency_key=idempotency_key,
+            mongo_client=rt.mongo_client,
+        )
+
+    @server.tool(
+        name="kaggle_submit_lifecycle",
+        description=(
+            "Kernel/submit lifecycle: poll submissions, kernel status, GPU errors, "
+            "and detect IS_RERUN / FAST_COMMIT / enable_gpu=False dummy runs "
+            "(refuse submit when dummy_risk)."
+        ),
+    )
+    async def kaggle_submit_lifecycle(
+        project_id: str,
+        ctx: Context,
+        competition: str = "",
+        kernel_source: str | None = None,
+        pat: str | None = None,
+    ) -> dict[str, Any]:
+        rt = _runtime(ctx)
+        from mymlfw.mcp.casmi_tools import tool_kaggle_submit_lifecycle
+
+        return await tool_kaggle_submit_lifecycle(
+            project_id=project_id,
+            pats=rt.pats,
+            headers=_headers(ctx),
+            pat=pat,
+            competition=competition,
+            kernel_source=kernel_source,
+        )
+
+    @server.tool(
+        name="record_dead_end",
+        description=(
+            "Write a dead end into Project Brain so query_project_brain(scope=dead_ends) "
+            "remembers (e.g. L10 SpecFold mid-only). Requires idempotency_key."
+        ),
+    )
+    async def record_dead_end(
+        project_id: str,
+        variable: str,
+        lesson: str,
+        idempotency_key: str,
+        ctx: Context,
+        status: str = "active_block",
+        pat: str | None = None,
+    ) -> dict[str, Any]:
+        rt = _runtime(ctx)
+        from mymlfw.mcp.casmi_tools import tool_record_dead_end
+
+        return await tool_record_dead_end(
+            project_id=project_id,
+            variable=variable,
+            lesson=lesson,
+            pats=rt.pats,
+            headers=_headers(ctx),
+            pat=pat,
+            idempotency_key=idempotency_key,
+            status=status,
+            mongo_client=rt.mongo_client,
+        )
+
+    @server.tool(
+        name="append_vault_law",
+        description=(
+            "Append a law section to local PROPRIETARY_KNOWLEDGE_VAULT.md. "
+            "Requires idempotency_key."
+        ),
+    )
+    async def append_vault_law(
+        vault_path: str,
+        law_id: str,
+        text: str,
+        idempotency_key: str,
+        ctx: Context,
+        project_id: str | None = None,
+        pat: str | None = None,
+    ) -> dict[str, Any]:
+        rt = _runtime(ctx)
+        from mymlfw.mcp.casmi_tools import tool_append_vault_law
+
+        return await tool_append_vault_law(
+            vault_path=vault_path,
+            law_id=law_id,
+            text=text,
+            pats=rt.pats,
+            headers=_headers(ctx),
+            pat=pat,
+            project_id=project_id,
+            idempotency_key=idempotency_key,
+        )
+
+    @server.tool(
+        name="diff_ranked_submissions",
+        description="Count R1/R2 churn between two ranked CSVs (id + candidates columns).",
+    )
+    async def diff_ranked_submissions(
+        path_a: str,
+        path_b: str,
+        ctx: Context,
+        project_id: str | None = None,
+        pat: str | None = None,
+    ) -> dict[str, Any]:
+        rt = _runtime(ctx)
+        from mymlfw.mcp.casmi_tools import tool_diff_ranked_submissions
+
+        return await tool_diff_ranked_submissions(
+            path_a=path_a,
+            path_b=path_b,
+            pats=rt.pats,
+            headers=_headers(ctx),
+            pat=pat,
+            project_id=project_id,
+        )
+
+    @server.tool(
+        name="dual_canary",
+        description=(
+            "CASMI standing gate: Panel + HUBS ranked MRR@25 → ΔMRR, R1 W/L, SHIP/FAIL "
+            "(both Δ≥0 and R1 L=0). Pass baselines from last SHIP artifact."
+        ),
+    )
+    async def dual_canary(
+        panel_path: str,
+        hubs_path: str,
+        submission_path: str,
+        ctx: Context,
+        baseline_panel_mrr: float | None = None,
+        baseline_hubs_mrr: float | None = None,
+        project_id: str | None = None,
+        pat: str | None = None,
+    ) -> dict[str, Any]:
+        rt = _runtime(ctx)
+        from mymlfw.mcp.casmi_tools import tool_dual_canary
+
+        return await tool_dual_canary(
+            panel_path=panel_path,
+            hubs_path=hubs_path,
+            submission_path=submission_path,
+            pats=rt.pats,
+            headers=_headers(ctx),
+            pat=pat,
+            baseline_panel_mrr=baseline_panel_mrr,
+            baseline_hubs_mrr=baseline_hubs_mrr,
+            project_id=project_id,
+        )
+
+    @server.tool(
+        name="ingest_vault_brain",
+        description=(
+            "Ingest PROPRIETARY_KNOWLEDGE_VAULT.md + *REPORT*.md under contest_dir "
+            "into Project Brain dead_ends/axioms. Requires idempotency_key."
+        ),
+    )
+    async def ingest_vault_brain(
+        project_id: str,
+        contest_dir: str,
+        idempotency_key: str,
+        ctx: Context,
+        pat: str | None = None,
+    ) -> dict[str, Any]:
+        rt = _runtime(ctx)
+        from mymlfw.mcp.casmi_tools import tool_ingest_vault_brain
+
+        return await tool_ingest_vault_brain(
+            project_id=project_id,
+            contest_dir=contest_dir,
+            pats=rt.pats,
+            headers=_headers(ctx),
+            pat=pat,
+            idempotency_key=idempotency_key,
+            mongo_client=rt.mongo_client,
+        )
+
+    @server.tool(
+        name="public_code_badge",
+        description="Surface badge≠score (notebook title vs observed LB).",
+    )
+    async def public_code_badge(
+        title_score: float,
+        observed_score: float,
+        ctx: Context,
+        pat: str | None = None,
+    ) -> dict[str, Any]:
+        rt = _runtime(ctx)
+        from mymlfw.mcp.casmi_tools import tool_public_code_badge
+
+        return await tool_public_code_badge(
+            pats=rt.pats,
+            title_score=title_score,
+            observed_score=observed_score,
+            headers=_headers(ctx),
+            pat=pat,
         )
 
     @server.tool(

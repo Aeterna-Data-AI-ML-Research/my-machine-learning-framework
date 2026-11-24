@@ -2,21 +2,18 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 
 from mymlfw.campaign.ledger import load_ledger, set_artifact_sha
 from mymlfw.errors import MymlfwError
+from mymlfw.kaggle_notebook import prefer_csv_payload_sha
 from mymlfw.submit.checks import check_scale_report
 
 
 def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+    """Prefer inner CSV SHA for single-CSV zips (matches ``probe sha`` / Kaggle extract)."""
+    return prefer_csv_payload_sha(path)["sha256"]
 
 
 def _load_json(path) -> dict:
@@ -42,10 +39,26 @@ def preflight(
     row = next((item for item in rows if item["experiment_id"] == experiment_id), None)
     if row is None:
         raise MymlfwError("UNKNOWN_EXPERIMENT", "Register the probe before preflight.", experiment_id=experiment_id)
-    if row["verdict"] in {"kill", "confirmed-large-gap"}:
+    if row["verdict"] in {
+        "kill",
+        "confirmed-large-gap",
+        "noise",
+        "DUPLICATE_CODE",
+    } or str(row["verdict"]).endswith("_trap") or str(row["verdict"]) in {
+        "soft_proxy_vs_exact_metric",
+        "fold_subsample_invalid",
+        "sibling_odds_rebrand",
+        "typo_micro_variant",
+        "o3_o4_mps_fail",
+        "areeb_mix3",
+        "duplicate_code_sha",
+        "noise_band",
+        "td_uniqueness_trap",
+    }:
         raise MymlfwError(
             "PROBE_CLOSED",
-            "This probe is already killed or a confirmed CV-LB gap. Register a new variable.",
+            "This probe is closed (kill / gap / noise / duplicate / typed trap). "
+            "Register a new variable.",
             verdict=row["verdict"],
             note=row["note"],
         )
@@ -83,6 +96,29 @@ def preflight(
             "Set enable_internet to false in kernel-metadata.json.",
             enable_internet=internet,
         )
+    # SiClink / NTL: assert Output name + competition submit link when present in metadata
+    output_name = kernel_doc.get("output_name") or kernel_doc.get("Output")
+    if "output_name" in kernel_doc or "Output" in kernel_doc:
+        if not output_name:
+            raise MymlfwError(
+                "KERNEL_OUTPUT_NAME",
+                "kernel-metadata.json Output / output_name must be non-empty.",
+            )
+    competition = kernel_doc.get("competition_sources") or kernel_doc.get("competition")
+    if competition is not None and not competition:
+        raise MymlfwError(
+            "KERNEL_COMPETITION",
+            "kernel-metadata.json competition / competition_sources must be set for submit.",
+        )
+    if previous_hashes is not None and pin_hash is False:
+        # refuse overwriting submit zip hash with a known starter baseline marker
+        starter = kernel_doc.get("starter_baseline_sha256")
+        if starter and digest == str(starter):
+            raise MymlfwError(
+                "STARTER_BASELINE_OVERWRITE",
+                "Refuse submitting the starter baseline zip as the fire artifact.",
+                sha256=digest,
+            )
     if previous_hashes is not None:
         text = Path(previous_hashes).read_text()
         if digest in text:

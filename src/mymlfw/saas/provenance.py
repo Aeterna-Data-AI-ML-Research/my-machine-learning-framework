@@ -164,10 +164,19 @@ def verify_project_licenses(
     *,
     gate: str,
 ) -> dict[str, Any]:
-    """Hard gate for kaggle_submit / final promote / submission git export."""
+    """Hard gate for kaggle_submit / final promote / submission git export.
+
+    Runs CASMI GNPS/NIST/SpecFold scrub first so commercial-track blocks surface
+    before the ensemble gate.
+    """
+    rows = [dict(c) for c in credits]
+    from mymlfw.saas.casmi_ops import scrub_casmi_credits
+
+    scrubbed = scrub_casmi_credits(rows)
+    rows = list(scrubbed.get("credits") or rows)
     blocked = [
         c
-        for c in credits
+        for c in rows
         if c.get("used_in_final_ensemble")
         and str(c.get("status") or "").startswith("BLOCKED")
     ]
@@ -177,8 +186,14 @@ def verify_project_licenses(
             "error_code": "disqualification_risk",
             "message": "[CRITICAL: DISQUALIFICATION RISK]",
             "blocked": [c.get("_id") or c.get("id") for c in blocked],
+            "casmi_scrub_flagged": scrubbed.get("flagged") or [],
         }
-    return {"ok": True, "blocked": []}
+    return {
+        "ok": True,
+        "blocked": [],
+        "casmi_scrub_flagged": scrubbed.get("flagged") or [],
+        "credits": rows,
+    }
 
 
 def render_provenance_ascii_board(credits: Iterable[dict[str, Any]]) -> str:
