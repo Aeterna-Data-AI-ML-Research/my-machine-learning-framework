@@ -2,6 +2,11 @@
 # Torch is not installed; use the train extra / a custom image for GPU training.
 FROM python:3.12-slim
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --uid 1000 --shell /bin/bash mymlfw
+
 WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src ./src
@@ -11,5 +16,10 @@ RUN pip install --no-cache-dir -e ".[dev]" \
     && pip uninstall -y torch 2>/dev/null || true
 
 WORKDIR /work
+RUN chown mymlfw:mymlfw /work
+
+# Compose overrides with host uid:gid (MYMLFW_UID/GID) so bind-mounted writes match the host user.
+USER mymlfw
+
 ENTRYPOINT ["python", "-m", "mymlfw"]
 CMD ["version"]

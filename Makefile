@@ -1,4 +1,4 @@
-.PHONY: dev up down logs ps cli shell-cli openapi api-docs anti-drift test install-saas web-build
+.PHONY: dev up down logs ps cli cli-build shell-cli openapi api-docs anti-drift test install-saas web-build
 
 COMPOSE := docker compose -f deploy/docker-compose.yml
 
@@ -24,14 +24,26 @@ logs:
 ps:
 	$(COMPOSE) ps
 
+# Build the contest CLI image (not rebuilt on every `make cli`).
+cli-build:
+	$(COMPOSE) --profile cli build cli
+
 # Run contest toolkit inside Docker (no host venv required).
 # Example: make cli CMD='playbook strategies --modality tabular'
 # Contest dir: MYMLFW_WORK=/path/to/contest make cli CMD='analyze --dir .'
+# CMD is passed via env (not shell-eval'd) so metacharacters cannot inject host commands.
 cli:
-	MYMLFW_WORK="$(or $(MYMLFW_WORK),$(CURDIR))" $(COMPOSE) --profile cli run --rm --build cli $(CMD)
+	@MYMLFW_WORK="$(or $(MYMLFW_WORK),$(CURDIR))" \
+	MYMLFW_UID="$(shell id -u)" \
+	MYMLFW_GID="$(shell id -g)" \
+	MYMLFW_CLI_CMD="$(CMD)" \
+	./deploy/run-cli.sh
 
 shell-cli:
-	MYMLFW_WORK="$(or $(MYMLFW_WORK),$(CURDIR))" $(COMPOSE) --profile cli run --rm --build --entrypoint /bin/bash cli
+	MYMLFW_WORK="$(or $(MYMLFW_WORK),$(CURDIR))" \
+	MYMLFW_UID="$(shell id -u)" \
+	MYMLFW_GID="$(shell id -g)" \
+	$(COMPOSE) --profile cli run --rm --entrypoint /bin/bash cli
 
 openapi:
 	.venv/bin/python scripts/generate_openapi.py

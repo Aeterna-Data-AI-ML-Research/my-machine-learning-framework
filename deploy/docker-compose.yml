@@ -203,17 +203,20 @@ services:
 
   # Contest toolkit — not started by `make up`; use `make cli CMD='…'`.
   # Mount host workdir at /work. Default `..` is repo root (compose file lives in deploy/).
-  # Prefer MYMLFW_WORK=/absolute/path (Makefile sets it to CURDIR).
+  # Prefer MYMLFW_WORK=/absolute/path (Makefile / run-cli.sh set it).
+  # user matches host uid so bind-mounted writes are not root-owned on Linux.
   cli:
     profiles: ["cli"]
     build:
       context: ..
       dockerfile: deploy/Dockerfile.cli
     working_dir: /work
+    user: "${MYMLFW_UID:-1000}:${MYMLFW_GID:-1000}"
     volumes:
       - ${MYMLFW_WORK:-..}:/work
     environment:
       MYMLFW_API: ${MYMLFW_API:-http://api:8000}
+      HOME: /tmp
     networks:
       - edge
     restart: "no"

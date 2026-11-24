@@ -37,9 +37,10 @@ MCP shares Mongo with the API. Mint a PAT in Studio **Settings → Agent PAT**, 
 
 ### Contest CLI in Docker
 
-The `cli` Compose profile runs `python -m mymlfw` with `${MYMLFW_WORK:-.}` mounted at `/work`:
+The `cli` Compose profile runs `python -m mymlfw` with the host workdir at `/work`. Compose’s default relative mount is `${MYMLFW_WORK:-..}` (repo root, because the compose file lives in `deploy/`). `make cli` and `./deploy/run-cli.sh` set an absolute `MYMLFW_WORK` and pass your host uid/gid so writes are not root-owned.
 
 ```bash
+make cli-build   # once after Dockerfile.cli changes
 make cli CMD='version'
 make cli CMD='playbook strategies --modality tabular'
 MYMLFW_WORK=/path/to/contest make cli CMD='analyze --dir .'
@@ -49,7 +50,10 @@ make shell-cli
 Equivalent:
 
 ```bash
-docker compose -f deploy/docker-compose.yml --profile cli run --rm --build cli version
+./deploy/run-cli.sh version
+# or:
+MYMLFW_WORK=$PWD MYMLFW_UID="$(id -u)" MYMLFW_GID="$(id -g)" \
+  docker compose -f deploy/docker-compose.yml --profile cli run --rm cli version
 ```
 
 ### New project (DS playbook wizard)

@@ -46,13 +46,14 @@ make down        # stop stack
 The `cli` service runs `python -m mymlfw` with the host directory mounted at `/work` (default: repo root).
 
 ```bash
+make cli-build   # after Dockerfile.cli changes
 make cli CMD='version'
 make cli CMD='playbook strategies --modality tabular'
 MYMLFW_WORK=/path/to/contest make cli CMD='analyze --dir .'
 make shell-cli   # interactive bash in the CLI image
 ```
 
-Torch is not in the default CLI image; use a host `[train]` install or a custom image for GPU training.
+`make cli` mounts the workdir as your host uid/gid and does not rebuild on every call. Torch is not in the default CLI image; use a host `[train]` install or a custom image for GPU training.
 
 ### First login (local)
 
