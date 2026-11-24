@@ -1,15 +1,13 @@
 # Run the Campaign SaaS stack
 
-How-to. Bring up the local control plane (API, web, Mongo, Redis, MinIO, worker) without spending on RunPod or AWS until you connect credentials.
+How-to. Bring up the local control plane (API, web, Mongo, Redis, MinIO, worker, MCP) in Docker — no host Python required for day-to-day Studio or contest CLI.
 
-## Install
+## Prerequisites
 
-From the repository root:
+- Docker Desktop (or Docker Engine + Compose v2)
+- Optional host venv only for pytest / editing outside containers (see below)
 
-```bash
-python -m venv .venv
-.venv/bin/pip install -e ".[saas,dev]"
-```
+Env template: [deploy/.env.example](../../deploy/.env.example).
 
 ## Start Compose
 
@@ -17,7 +15,13 @@ python -m venv .venv
 make up
 ```
 
-That runs `docker compose -f deploy/docker-compose.yml up --build -d`. Compose project name is `mymlfw` (see top-level `name:` in the file); expand **mymlfw** in Docker Desktop → Containers. Bindings stay on `127.0.0.1` only.
+That runs `docker compose -f deploy/docker-compose.yml up --build -d` and ensures `~/.kaggle` exists for the API mount. Compose project name is `mymlfw` (see top-level `name:` in the file); expand **mymlfw** in Docker Desktop → Containers. Bindings stay on `127.0.0.1` only.
+
+```bash
+make ps
+make logs
+make down
+```
 
 Host ports below avoid common clashes with other local Compose projects (e.g. Iridium on 5173/6379/8080, or a process on 8000). Container-internal ports are unchanged.
 
@@ -31,11 +35,35 @@ Host ports below avoid common clashes with other local Compose projects (e.g. Ir
 
 MCP shares Mongo with the API. Mint a PAT in Studio **Settings → Agent PAT**, then point Cursor/Claude at `http://127.0.0.1:8100/mcp` with `Authorization: Bearer <pat>`. Playbook: [Keep a Studio project updated via MCP](agent-mcp-campaign-sync.md).
 
+### Contest CLI in Docker
+
+The `cli` Compose profile runs `python -m mymlfw` with `${MYMLFW_WORK:-.}` mounted at `/work`:
+
+```bash
+make cli CMD='version'
+make cli CMD='playbook strategies --modality tabular'
+MYMLFW_WORK=/path/to/contest make cli CMD='analyze --dir .'
+make shell-cli
+```
+
+Equivalent:
+
+```bash
+docker compose -f deploy/docker-compose.yml --profile cli run --rm --build cli version
+```
+
 ### New project (DS playbook wizard)
 
 In Studio home click **New project**. The wizard locks venue (Kaggle vs commercial), data modality, leak-free CV, and a fast baseline, then seeds Roadmap Stages 1–5 (EDA → CV → baseline → features → path split). Details: [Start a Studio project with the DS playbook wizard](studio-new-project-wizard.md).
 
 Stop with `make down`. In Docker Desktop → Containers, expand the **mymlfw** project group.
+
+## Optional host install (pytest / non-Docker)
+
+```bash
+python -m venv .venv
+.venv/bin/pip install -e ".[saas,dev]"
+```
 
 ## Kaggle sync (optional)
 

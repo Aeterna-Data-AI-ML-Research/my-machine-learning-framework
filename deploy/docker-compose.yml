@@ -201,6 +201,23 @@ services:
       - control_plane_internal
     restart: "no"
 
+  # Contest toolkit — not started by `make up`; use `make cli CMD='…'`.
+  # Mount host workdir at /work. Default `..` is repo root (compose file lives in deploy/).
+  # Prefer MYMLFW_WORK=/absolute/path (Makefile sets it to CURDIR).
+  cli:
+    profiles: ["cli"]
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.cli
+    working_dir: /work
+    volumes:
+      - ${MYMLFW_WORK:-..}:/work
+    environment:
+      MYMLFW_API: ${MYMLFW_API:-http://api:8000}
+    networks:
+      - edge
+    restart: "no"
+
 volumes:
   kaggle_data:
 

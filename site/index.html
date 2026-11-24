@@ -165,10 +165,10 @@
           <p class="section-kicker">Campaign SaaS</p>
           <h2 class="section-title">Studio when the campaign outgrows a single folder</h2>
           <p class="section-lede">
-            Optional Docker stack: API, Studio console, MCP for agents, Mongo, Redis, and object storage — all bound to localhost until you connect cloud runners.
+            Docker Compose brings up API, Studio, MCP, Mongo, Redis, and object storage — bound to localhost until you connect cloud runners. New projects start from Studio’s DS playbook wizard.
           </p>
           <div class="cta-row band-actions">
-            <a class="btn btn-primary" href="https://github.com/Aeterna-Data-AI-ML-Research/my-machine-learning-framework#campaign-saas--docker-setup">Docker setup</a>
+            <a class="btn btn-primary" href="#start">Start with Docker</a>
             <a class="btn btn-ghost" href="https://github.com/Aeterna-Data-AI-ML-Research/my-machine-learning-framework/blob/main/docs/how-to/agent-mcp-campaign-sync.md">Agent MCP sync</a>
           </div>
         </div>
@@ -178,27 +178,55 @@
         <div class="wrap">
           <header class="section-head reveal">
             <p class="section-kicker">Start</p>
-            <h2 class="section-title">Install and scaffold a contest</h2>
-            <p class="section-lede">Python 3.11+. Local by default — no account required for the core toolkit.</p>
+            <h2 class="section-title">New project development with Docker</h2>
+            <p class="section-lede">
+              Docker is the default path — no host Python for Studio or the contest CLI. Clone, <code class="inline-code">make up</code>, then scaffold a contest or open Studio.
+            </p>
           </header>
+          <ol class="loop start-steps reveal">
+            <li>
+              <h3>Bring up the stack</h3>
+              <p>API on <code class="inline-code">:8001</code>, Studio on <code class="inline-code">:5175</code>, MCP on <code class="inline-code">:8100</code>. Ports bind to loopback only.</p>
+            </li>
+            <li>
+              <h3>Run the contest CLI</h3>
+              <p>The <code class="inline-code">cli</code> image mounts your workdir. Scaffold a contest folder with an empty ledger and preflight script.</p>
+            </li>
+            <li>
+              <h3>Open Studio → New project</h3>
+              <p>Register locally (OAuth stub), then run the DS playbook wizard: venue, modality, CV, baseline, and Roadmap Stages 1–5.</p>
+            </li>
+            <li>
+              <h3>Wire an agent (optional)</h3>
+              <p>Mint a PAT under Settings → Agent PAT; point Cursor/Claude at <code class="inline-code">http://127.0.0.1:8100/mcp</code>.</p>
+            </li>
+          </ol>
           <div class="start-grid reveal">
             <div>
               <p>
-                Clone the repo, install the package, then create a contest directory with an empty ledger and preflight script.
+                Prerequisites: Docker Desktop (or Engine + Compose v2). Host venv is optional — only for pytest or editing outside containers.
               </p>
               <p class="start-note">
-                Full walkthrough:
-                <a href="https://github.com/Aeterna-Data-AI-ML-Research/my-machine-learning-framework/blob/main/docs/tutorials/first-contest.md">First contest</a>
+                Detail:
+                <a href="https://github.com/Aeterna-Data-AI-ML-Research/my-machine-learning-framework#docker-first-default">Docker-first README</a>
                 ·
-                <a href="https://github.com/Aeterna-Data-AI-ML-Research/my-machine-learning-framework/blob/main/docs/index.md">Docs index</a>
+                <a href="https://github.com/Aeterna-Data-AI-ML-Research/my-machine-learning-framework/blob/main/docs/how-to/run-campaign-saas.md">Run Campaign SaaS</a>
+                ·
+                <a href="https://github.com/Aeterna-Data-AI-ML-Research/my-machine-learning-framework/blob/main/docs/how-to/studio-new-project-wizard.md">New project wizard</a>
+                ·
+                <a href="https://github.com/Aeterna-Data-AI-ML-Research/my-machine-learning-framework/blob/main/docs/tutorials/first-contest.md">First contest</a>
               </p>
             </div>
             <pre><code>git clone https://github.com/Aeterna-Data-AI-ML-Research/my-machine-learning-framework.git
 cd my-machine-learning-framework
-python -m venv .venv
-.venv/bin/pip install -e .
-.venv/bin/python -m mymlfw version
-.venv/bin/python -m mymlfw new-contest demo --dest .</code></pre>
+make up
+
+# Contest toolkit (no host venv)
+make cli CMD='version'
+make cli CMD='new-contest demo --dest .'
+make cli CMD='playbook strategies --modality tabular'
+
+# Studio — New project wizard at http://127.0.0.1:5175/</code></pre>
           </div>
         </div>
       </section>

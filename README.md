@@ -4,37 +4,16 @@ Local toolkit for ML and Kaggle contests. Version **0.2.0**. It keeps one experi
 
 This repository is the documentation and the package. Human reading starts at [docs/index.md](docs/index.md). Coding agents read [llms.txt](llms.txt), then [AGENTS.md](AGENTS.md).
 
-## Install (local CLI)
+## Docker-first (default)
 
-Requires Python 3.11 or newer.
-
-```bash
-python -m venv .venv
-.venv/bin/pip install -e .
-```
-
-That install covers the ledger, metrics, GroupKFold, blends, the submit gate, the kernel builder, the five engines, cloud script rendering, and retrieval. Tests that import torch skip until the train extra is installed:
-
-```bash
-.venv/bin/pip install -e '.[train]'
-```
-
-For SaaS Python extras (API / MCP / worker outside Compose):
-
-```bash
-.venv/bin/pip install -e '.[saas,dev]'
-```
-
-## Campaign SaaS — Docker setup
-
-Bring up the full local stack (MongoDB, Redis, object store, API, worker, Studio web, MCP) with Docker Compose. Data-plane ports bind **`127.0.0.1` only**.
+Day-to-day use is Docker Compose — no host Python required for Studio or the contest CLI.
 
 ### Prerequisites
 
 - Docker Desktop (or Docker Engine + Compose v2)
-- Optional: a [Kaggle API token](https://www.kaggle.com/docs/api) if you want live competition sync
+- Optional: a [Kaggle API token](https://www.kaggle.com/docs/api) for live competition sync
 
-### Start
+### Start the stack
 
 From the repository root:
 
@@ -44,7 +23,7 @@ make up
 # or:      docker compose -f deploy/docker-compose.yml up --build -d
 ```
 
-Compose project name is **`mymlfw`** (expand that group in Docker Desktop → Containers). First boot builds the API/web images; later starts reuse the cache.
+Compose project name is **`mymlfw`**. Data-plane ports bind **`127.0.0.1` only**. Env template: [`deploy/.env.example`](deploy/.env.example).
 
 | URL / host port | Service |
 | --- | --- |
@@ -56,12 +35,24 @@ Compose project name is **`mymlfw`** (expand that group in Docker Desktop → Co
 | `http://127.0.0.1:9000` | Object store (S3 API; Silo / MinIO-compatible) |
 | `http://127.0.0.1:9001/` | Object store console (`mymlfw` / `mymlfwsecret`) |
 
-Stop the stack:
+```bash
+make ps          # container status
+make logs        # follow logs
+make down        # stop stack
+```
+
+### Contest CLI in Docker
+
+The `cli` service runs `python -m mymlfw` with the host directory mounted at `/work` (default: repo root).
 
 ```bash
-make down
-# or: docker compose -f deploy/docker-compose.yml down
+make cli CMD='version'
+make cli CMD='playbook strategies --modality tabular'
+MYMLFW_WORK=/path/to/contest make cli CMD='analyze --dir .'
+make shell-cli   # interactive bash in the CLI image
 ```
+
+Torch is not in the default CLI image; use a host `[train]` install or a custom image for GPU training.
 
 ### First login (local)
 
@@ -78,7 +69,7 @@ curl -s -X POST http://127.0.0.1:8001/v1/auth/register \
 
 Save `access_token` from the response. Demo campaign data is seeded after login.
 
-**New project:** Studio home → **New project** runs the DS playbook wizard (venue → modality → CV → baseline → links) and can seed Roadmap Stages 1–5. How-to: [studio-new-project-wizard.md](docs/how-to/studio-new-project-wizard.md).
+**New project:** Studio home → **New project** runs the DS playbook wizard. How-to: [studio-new-project-wizard.md](docs/how-to/studio-new-project-wizard.md).
 
 ### Agent MCP
 
@@ -90,11 +81,12 @@ Playbook: [Keep a Studio project updated via MCP](docs/how-to/agent-mcp-campaign
 ### Optional: Kaggle token before `make up`
 
 ```bash
+mkdir -p ~/.kaggle
 export KAGGLE_API_TOKEN="$(tr -d '[:space:]' < ~/.kaggle/access_token)"
 make up
 ```
 
-Compose also mounts `~/.kaggle` read-only into the API container.
+Compose mounts `~/.kaggle` read-only into the API container (`make up` creates the directory if missing).
 
 ### More detail
 
@@ -102,6 +94,17 @@ Compose also mounts `~/.kaggle` read-only into the API container.
 - [Connect cloud runners](docs/how-to/connect-cloud-runners.md) — RunPod / AWS after sealing keys
 - [SaaS environment reference](docs/reference/saas-env.md)
 - Compose file: [`deploy/docker-compose.yml`](deploy/docker-compose.yml)
+
+## Install (optional host CLI)
+
+For pytest or editing without Docker, Python 3.11+:
+
+```bash
+python -m venv .venv
+.venv/bin/pip install -e .
+# train extra (torch):  .venv/bin/pip install -e '.[train]'
+# SaaS extras on host:  .venv/bin/pip install -e '.[saas,dev]'
+```
 
 ## Tests
 
@@ -114,16 +117,15 @@ Phase modules run from `tests/test_phase1_package.py` through `tests/test_phase1
 
 ## Marketing site (GitHub Pages)
 
-Static marketing site lives in [`site/`](site/) — what the framework does, the contest loop, Docker Studio, and agent entrypoints. Deployed by [`.github/workflows/pages.yml`](.github/workflows/pages.yml) from `site/` on pushes to `main`.
-
-In the repository settings, set Pages to **GitHub Actions**. After the first green deploy:
+Static marketing site lives in [`site/`](site/). Deployed by [`.github/workflows/pages.yml`](.github/workflows/pages.yml) from `site/` on pushes to `main`.
 
 `https://aeterna-data-ai-ml-research.github.io/my-machine-learning-framework/`
 
 ## First CLI command
 
 ```bash
-.venv/bin/python -m mymlfw version
+make cli CMD='version'
+# or on host: .venv/bin/python -m mymlfw version
 ```
 
 The contest walkthrough is [docs/tutorials/first-contest.md](docs/tutorials/first-contest.md).

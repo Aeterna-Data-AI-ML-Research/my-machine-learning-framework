@@ -7,9 +7,9 @@ Campaign SaaS work: also read partitioned AGENTS under `src/mymlfw/saas/`, `src/
 ## Commands
 
 - Tests: `python -m pytest -q` from this checkout. Use the project virtualenv when it exists: `.venv/bin/python -m pytest -q`.
-- CLI: `python -m mymlfw`. Failures are one JSON object on stderr with `error_code` and `suggested_fix`.
+- CLI (Docker-first): `make cli CMD='version'` (Compose profile `cli`). Host: `python -m mymlfw`. Failures are one JSON object on stderr with `error_code` and `suggested_fix`.
 - Refresh the recipe block inside `llms.txt`: `python -m mymlfw sync-docs`. Keep the file at or under 1500 whitespace tokens. The checkout copy and `src/mymlfw/resources/llms.txt` stay identical.
-- SaaS local stack: `make dev` (or `just up`) from checkout — Compose binds mongo/redis/minio to `127.0.0.1` only. Operator docs: [docs/how-to/run-campaign-saas.md](docs/how-to/run-campaign-saas.md), [docs/how-to/connect-cloud-runners.md](docs/how-to/connect-cloud-runners.md), [docs/reference/saas-env.md](docs/reference/saas-env.md).
+- SaaS local stack: `make up` / `make dev` from checkout — Compose binds mongo/redis/minio to `127.0.0.1` only. `make logs` / `make ps` / `make down`. Operator docs: [docs/how-to/run-campaign-saas.md](docs/how-to/run-campaign-saas.md), [docs/how-to/connect-cloud-runners.md](docs/how-to/connect-cloud-runners.md), [docs/reference/saas-env.md](docs/reference/saas-env.md).
 
 ## Rules that override a local shortcut
 

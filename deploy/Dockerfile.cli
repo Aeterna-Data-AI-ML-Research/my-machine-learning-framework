@@ -1,0 +1,15 @@
+# Contest toolkit CLI — run `python -m mymlfw` without a host venv.
+# Torch is not installed; use the train extra / a custom image for GPU training.
+FROM python:3.12-slim
+
+WORKDIR /app
+COPY pyproject.toml README.md ./
+COPY src ./src
+COPY contracts ./contracts
+
+RUN pip install --no-cache-dir -e ".[dev]" \
+    && pip uninstall -y torch 2>/dev/null || true
+
+WORKDIR /work
+ENTRYPOINT ["python", "-m", "mymlfw"]
+CMD ["version"]

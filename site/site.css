@@ -456,6 +456,10 @@ button:focus-visible {
   color: var(--signal-bright);
 }
 
+.start-steps {
+  margin-bottom: 2.5rem;
+}
+
 .start-grid {
   display: grid;
   gap: 2rem;

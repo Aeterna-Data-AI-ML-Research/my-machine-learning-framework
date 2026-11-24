@@ -2,6 +2,16 @@
 
 Reference for mymlfw 0.2.0. The program is `python -m mymlfw`. `--debug` adds a traceback field to the error JSON. Every other failure is one JSON object on stderr with `error_code` and `suggested_fix`, and the process exits 1.
 
+## Host vs Docker
+
+| How | Command |
+| --- | --- |
+| Docker (default) | `make cli CMD='version'` — mounts `${MYMLFW_WORK:-.}` at `/work` |
+| Docker (compose) | `docker compose -f deploy/docker-compose.yml --profile cli run --rm cli version` |
+| Host venv | `.venv/bin/python -m mymlfw version` after `pip install -e .` |
+
+Torch is not in the default CLI image; install `.[train]` on the host or build a custom image for GPU training. Stack how-to: [Run the Campaign SaaS stack](../how-to/run-campaign-saas.md).
+
 Flags below are the ones the parser requires or commonly takes. Defaults are the argparse defaults.
 
 ## Contest loop
