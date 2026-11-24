@@ -118,7 +118,7 @@ Static marketing site lives in [`site/`](site/) — what the framework does, the
 
 In the repository settings, set Pages to **GitHub Actions**. After the first green deploy:
 
-`https://geek-data-ai-ml-research.github.io/my-machine-learning-framework/`
+`https://aeterna-data-ai-ml-research.github.io/my-machine-learning-framework/`
 
 ## First CLI command
 
