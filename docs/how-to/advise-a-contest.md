@@ -4,11 +4,20 @@ How-to. Open a git worktree that contains an advice brief and the next five step
 
 ## Run
 
-From the contest directory, or pass its path:
+From the contest directory, or pass its path. Docker (default):
+
+```bash
+MYMLFW_WORK=/path/to/contest make cli CMD='advise --dir . --task "next experiment"'
+# or: ./deploy/run-cli.sh advise --dir . --task "next experiment"
+```
+
+Host:
 
 ```bash
 python -m mymlfw advise --dir . --task "next experiment"
 ```
+
+The CLI image includes `git` so worktree creation works inside Docker.
 
 `--db` selects the SQLite file. The default is `recipes/memory.db` in the framework checkout. That file is gitignored.
 

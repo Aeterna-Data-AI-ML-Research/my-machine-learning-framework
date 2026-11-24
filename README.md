@@ -1,6 +1,6 @@
 # mymlfw
 
-Local toolkit for ML and Kaggle contests. Version **0.2.0**. It keeps one experiment ledger, checks blends and submissions, and gives a coding agent a memory of what already failed. The same repo also ships a **Campaign SaaS** control plane (API, Studio web, MCP, worker) plus a shared **DS playbook** (`mymlfw playbook` / Studio New project wizard) for modality strategies and paradigm shifts.
+Local toolkit for ML and Kaggle contests. Version **0.3.0**. It keeps one experiment ledger, checks blends and submissions, and gives a coding agent a memory of what already failed. The same repo also ships a **Campaign SaaS** control plane (API, Studio web, MCP, worker) plus a shared **DS playbook** (`mymlfw playbook` / Studio New project wizard) for modality strategies and paradigm shifts.
 
 This repository is the documentation and the package. Human reading starts at [docs/index.md](docs/index.md). Coding agents read [llms.txt](llms.txt), then [AGENTS.md](AGENTS.md).
 
@@ -53,7 +53,7 @@ MYMLFW_WORK=/path/to/contest make cli CMD='analyze --dir .'
 make shell-cli   # interactive bash in the CLI image
 ```
 
-`make cli` mounts the workdir as your host uid/gid and does not rebuild on every call. Torch is not in the default CLI image; use a host `[train]` install or a custom image for GPU training.
+`make cli` mounts the workdir as your host uid/gid, includes `git` (for `advise`), and does not rebuild on every call (`make cli-build` when the Dockerfile changes). Equivalent: `./deploy/run-cli.sh version`. Torch is not in the default CLI image; use a host `[train]` install or a custom image for GPU training.
 
 ### First login (local)
 

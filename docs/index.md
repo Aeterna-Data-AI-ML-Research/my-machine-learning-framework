@@ -1,6 +1,6 @@
 # mymlfw documentation
 
-Version 0.2.0. These pages follow the [Diátaxis](https://diataxis.fr/) split: a tutorial to learn the loop, how-to guides for one task, reference for lookup, and explanation for why the pieces are separated.
+Version 0.3.0. These pages follow the [Diátaxis](https://diataxis.fr/) split: a tutorial to learn the loop, how-to guides for one task, reference for lookup, and explanation for why the pieces are separated.
 
 | If you are | Start here |
 | --- | --- |
@@ -11,7 +11,9 @@ Version 0.2.0. These pages follow the [Diátaxis](https://diataxis.fr/) split: a
 | A coding agent | [`llms.txt`](../llms.txt) and [`AGENTS.md`](../AGENTS.md) |
 | The published marketing site | [`site/index.html`](../site/index.html) → GitHub Pages |
 
-Install with `pip install -e .` from the repository root. Python 3.11 or newer. The command is `python -m mymlfw`. A failure is one JSON object on stderr.
+**Docker-first (default):** from the repository root, `make up` starts Studio/API/MCP; `make cli-build` then `make cli CMD='…'` runs the contest toolkit (git included; host uid/gid on the workdir mount). See [Run the Campaign SaaS stack](how-to/run-campaign-saas.md) and [CLI](reference/cli.md).
+
+Optional host install: `pip install -e .` (Python 3.11+). The command is `python -m mymlfw`. A failure is one JSON object on stderr.
 
 ## Tutorials
 

@@ -4,19 +4,23 @@ Tutorial. You finish with a contest directory, one pending probe, and an analyze
 
 ## Install
 
-From this repository:
+Docker is the default path (no host venv):
 
 ```bash
-pip install -e .
-python -m mymlfw version
+make up
+make cli-build
+make cli CMD='version'
 ```
 
-The version line is `0.1.0`.
+The version line is `0.3.0`.
+
+Optional host install: `pip install -e .` then `python -m mymlfw version`.
 
 ## Scaffold
 
 ```bash
-python -m mymlfw new-contest demo --dest .
+make cli CMD='new-contest demo --dest .'
+# or on host: python -m mymlfw new-contest demo --dest .
 ```
 
 That creates `demo/` with an empty ledger, a kernel skeleton, `engine.py`, and `bin/preflight_submit.sh`. The layout is listed in [Contest layout](../reference/contest-layout.md).
@@ -26,13 +30,7 @@ That creates `demo/` with an empty ledger, a kernel skeleton, `engine.py`, and `
 A probe names one variable and the public-score band you expect before you train.
 
 ```bash
-python -m mymlfw probe register \
-  --ledger demo/ledger/experiments.csv \
-  --experiment-id exp_001 \
-  --baseline-id base \
-  --variable lora_r=16 \
-  --band-low 0.70 \
-  --band-high 0.80
+make cli CMD='probe register --ledger demo/ledger/experiments.csv --experiment-id exp_001 --baseline-id base --variable lora_r=16 --band-low 0.70 --band-high 0.80'
 ```
 
 The new row has verdict `pending`. A second probe with the same variable and the same band is rejected. Details are in [Record a probe](../how-to/record-a-probe.md).
@@ -40,11 +38,11 @@ The new row has verdict `pending`. A second probe with the same variable and the
 ## Ask what to do next
 
 ```bash
-python -m mymlfw analyze --dir demo
+make cli CMD='analyze --dir demo'
 ```
 
 Success is JSON on stdout. `next_steps` holds at most five items. On this empty contest the report has no kill and no train table. After you add `data/train.csv` and a scored ledger, the same command uses those files. The command writes nothing in `demo/` unless you pass `--out`.
 
 ## What this tutorial did not do
 
-`advise` needs a git commit and is covered in [Advise a contest](../how-to/advise-a-contest.md). Training needs `pip install -e '.[train]'` and is not part of this path. The package records a public score. It does not submit to Kaggle.
+`advise` needs a git commit and is covered in [Advise a contest](../how-to/advise-a-contest.md). The CLI image includes `git`. Training needs `pip install -e '.[train]'` (or a custom image) and is not part of this path. The package records a public score. It does not submit to Kaggle.

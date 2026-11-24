@@ -114,6 +114,10 @@ Auth: `Authorization: Bearer` / `MYMLFW_MCP_PAT` preferred over tool `pat`. Scop
 | --- | --- |
 | `make up` / `make dev` | Compose up |
 | `make down` | Compose down |
+| `make ps` / `make logs` | Status / follow logs |
+| `make cli-build` | Build contest CLI image |
+| `make cli CMD='…'` | Run `python -m mymlfw …` in Docker (`./deploy/run-cli.sh` equivalent) |
+| `make shell-cli` | Interactive shell in the CLI image |
 | `make openapi` | Regenerate `contracts/openapi.json` |
 | `make anti-drift` | AST + OpenAPI presence checks |
 | `make test` | `pytest -q` |
